@@ -13,7 +13,6 @@ A multi-library platform for students to search and rent books, reserve study ro
 | DevOps | TBD |
 | Deployment | TBD |
 | Testing| TBD |
-|
 
 ## Team
 - Emanuel Mora
