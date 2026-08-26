@@ -1,8 +1,19 @@
 ## Libro
 A multi-library platform for students to search and rent books, reserve study rooms, and view library availability.
 
-## Stack
-[To be decided]
+## Tech stack
+
+| Area | Technology |
+| --- | --- |
+| Frontend | TBD |
+| Backend | TBD|
+| Data | TBD |
+| Auth and Database | TBD |
+| AI | TBD |
+| DevOps | TBD |
+| Deployment | TBD |
+| Testing| TBD |
+|
 
 ## Team
 - Emanuel Mora
