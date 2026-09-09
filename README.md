@@ -7,8 +7,8 @@ A multi-library platform for students to search and rent books, reserve study ro
 | --- | --- |
 | Frontend | Next.js, React, TypeScript, Tailwind CSS |
 | Backend | FastAPI, Python |
-| Data | TBD |
-| Auth and Database | TBD |
+| Data | Google Books API|
+| Auth and Database | PostgreSQL, Supabase |
 | AI | TBD |
 | DevOps | Docker Compose, GitHub Actions|
 | Deployment | TBD |
