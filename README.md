@@ -5,12 +5,12 @@ A multi-library platform for students to search and rent books, reserve study ro
 
 | Area | Technology |
 | --- | --- |
-| Frontend | TBD |
-| Backend | TBD|
+| Frontend | Next.js, React, TypeScript, Tailwind CSS |
+| Backend | FastAPI, Python |
 | Data | TBD |
 | Auth and Database | TBD |
 | AI | TBD |
-| DevOps | TBD |
+| DevOps | Docker Compose, GitHub Actions|
 | Deployment | TBD |
 | Testing| TBD |
 
