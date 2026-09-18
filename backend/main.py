@@ -1,7 +1,6 @@
 #use only for API endpoints everything else make a router
 import os
 from pathlib import Path
-
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
