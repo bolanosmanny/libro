@@ -14,12 +14,6 @@ A multi-library platform for students to search and rent books, reserve study ro
 | Deployment | TBD |
 | Testing| TBD |
 
-## Team
-- Emanuel Mora
-- Jaden Morales
-- Simon Salazar-Marin
-- Tanner Slaughter
-
 ## System Design
 ```mermaid
 flowchart LR
@@ -46,3 +40,9 @@ flowchart LR
     class D database;
     class E external;
 ```
+
+## Team
+- Emanuel Mora
+- Jaden Morales
+- Simon Salazar-Marin
+- Tanner Slaughter
