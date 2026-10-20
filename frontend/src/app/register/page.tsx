@@ -5,11 +5,15 @@ export default function RegisterPage() {
     const inputStyle = "mt-2 w-full rounded-xl border border-slate-500 bg-slate-700/50 px-4  py-3 text-white outline-none placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/30";
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-200 p-4 sm:p-8">
-            <div className = "grid w-full max-w-6xl overflow-hidden rounded-3xl bg-[#10263f] text-white shadow-2xl lg:min-h-[760px] lg:grid-cols-2">
+        <main className="flex min-h-screen items-center justify-center bg-slate-200 p-4 sm:p-6 lg:p-8">
+            <div className="grid w-full overflow-hidden rounded-3xl bg-[#10263f] text-white shadow-2xl lg:min-h-[calc(100dvh-4rem)] lg:grid-cols-2">
                 {/* Visual Panel */}
-                <section className = "relative hidden flex-col justify-between bg-gradient-to-br from-[#174d70] via-[#126477] to-[#10263f] p-10 lg:flex">
-                    <div className = "flex items-start justify-between">
+                <section className="relative hidden flex-col justify-between bg-[url('/Addlestone.Library.jpg')] bg-cover bg-[position:70%_center] p-10 lg:flex">
+                    <div
+                        aria-hidden="true"
+                        className="absolute inset-0 bg-gradient-to-b from-[#06182c]/60 via-[#06182c]/10 to-[#06182c]/80"
+                    />
+                    <div className="relative z-10 flex items-start justify-between">
                         <Link href = "/" className = "inline-block rounded-xl bg-transparent p-2">
                             <Image
                                 src ="/libro_transparent_logo.png"
@@ -29,8 +33,8 @@ export default function RegisterPage() {
                         </Link>
                     </div>
 
-                    <p className = "max-w-md text-4xl font-semibold leading-tight">
-                        Find books, Reserve rooms, and Study better.
+                    <p className="relative z-10 max-w-md text-4xl font-semibold leading-tight">
+                        Find books. Reserve rooms. Study better.
                     </p>
                 </section>
 
