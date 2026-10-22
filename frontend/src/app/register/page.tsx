@@ -1,8 +1,54 @@
-import Link from "next/link";
-import Image from "next/image";
+"use client";
 
-export default function RegisterPage() { 
+import Image from "next/image";
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+export default function RegisterPage() {
+    const router = useRouter();
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const inputStyle = "mt-2 w-full rounded-xl border border-slate-500 bg-slate-700/50 px-4  py-3 text-white outline-none placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/30";
+
+    async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setError("");
+        setSuccess("");
+
+        if (!supabase) {
+            setError("Authentication is not configured. Add the Supabase URL and anon key to frontend/.env.local.");
+            return;
+        }
+
+        const formData = new FormData(event.currentTarget);
+        const email = String(formData.get("email") ?? "");
+        const password = String(formData.get("password") ?? "");
+        const firstName = String(formData.get("firstName") ?? "").trim();
+        const lastName = String(formData.get("lastName") ?? "").trim();
+
+        setIsSubmitting(true);
+        const { data, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { first_name: firstName, last_name: lastName } },
+        });
+        setIsSubmitting(false);
+
+        if (signUpError) {
+            setError(signUpError.message);
+            return;
+        }
+
+        if (data.session) {
+            router.push("/dashboard");
+            return;
+        }
+
+        setSuccess("Account created. Check your email to confirm your account, then log in.");
+    }
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-slate-200 p-4 sm:p-6 lg:p-8">
@@ -68,7 +114,7 @@ export default function RegisterPage() {
                         </Link>
                     </p>
 
-                    <form className = "mt-12 space-y-6">
+                    <form className = "mt-12 space-y-6" onSubmit={handleSubmit}>
                         <div className = "grid gap-6 sm:grid-cols-2">
                             <label className = "block text-sm">
                                 First name
@@ -77,6 +123,7 @@ export default function RegisterPage() {
                                     type="text"
                                     name="firstName"
                                     autoComplete="given-name"
+                                    required
                                 />
                             </label>
 
@@ -87,6 +134,7 @@ export default function RegisterPage() {
                                     type="text"
                                     name="lastName"
                                     autoComplete="family-name"
+                                    required
                                 />
                             </label>
                         </div>
@@ -98,6 +146,7 @@ export default function RegisterPage() {
                                     type="email"
                                     name="email"
                                     autoComplete="email"
+                                    required
                                 />
                             </label>
 
@@ -108,15 +157,20 @@ export default function RegisterPage() {
                                     type="password"
                                     name="password"
                                     autoComplete="new-password"
+                                    minLength={6}
+                                    required
                                 />
                             </label>
 
                             <button 
-                                type="button"
+                                type="submit"
+                                disabled={isSubmitting}
                                 className = "w-full rounded-xl bg-teal-500 px-4 py-4 font-semibold text-white"
                             >
-                                Create Account
+                                {isSubmitting ? "Creating account..." : "Create Account"}
                             </button>
+                            {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+                            {success && <p role="status" className="text-sm text-emerald-300">{success}</p>}
                     </form>
                 </section>
             </div>

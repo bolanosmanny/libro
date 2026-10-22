@@ -1,9 +1,42 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const inputStyle =
     "mt-2 w-full rounded-xl border border-slate-500 bg-slate-700/50 px-4 py-3 text-white outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/30";
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+
+    if (!supabase) {
+      setError("Authentication is not configured. Add the Supabase URL and anon key to frontend/.env.local.");
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+
+    setIsSubmitting(true);
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    setIsSubmitting(false);
+
+    if (signInError) {
+      setError(signInError.message);
+      return;
+    }
+
+    router.push("/dashboard");
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-200 p-4 sm:p-6 lg:p-8">
@@ -67,7 +100,7 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <form className="mt-12 space-y-6">
+          <form className="mt-12 space-y-6" onSubmit={handleSubmit}>
             <label className="block text-sm">
               Email address
               <input
@@ -91,11 +124,13 @@ export default function LoginPage() {
             </label>
 
             <button
-              type="button"
+              type="submit"
+              disabled={isSubmitting}
               className="w-full rounded-xl bg-teal-500 px-4 py-4 font-semibold text-white"
             >
-              Log in
+              {isSubmitting ? "Logging in..." : "Log in"}
             </button>
+            {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
           </form>
         </section>
       </div>
