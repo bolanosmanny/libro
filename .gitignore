@@ -16,3 +16,10 @@ __pycache__/
 # Editor / OS files
 .vscode/
 .DS_Store
+# Virtual Environments & Caches
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+.next/
+node_modules/
