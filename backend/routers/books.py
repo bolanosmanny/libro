@@ -38,11 +38,13 @@ def test_pop_books():
 
     try:
         # parse book data and insert into Supabase table
+        # (book availability set to true by default currently)
         db_response = supabase.table("books").insert({
             "title": book.get("title"),
             "authors": book.get("authors", []),
             "description": book.get("description", ""),
-            "isbn": book.get("isbn")
+            "isbn": book.get("isbn"),
+            "is_available": True
         }).execute()
     except Exception as error:
         raise HTTPException(
