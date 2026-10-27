@@ -28,7 +28,7 @@ export default function HomePage() {
         Backend Status: <strong style={{ color: "green" }}>{status}</strong>
       </p>
 
-      <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
+      <div style={{ display: "flex", gap: "1rem", marginTop: "2rem", flexWrap: "wrap" }}>
         <Link
           href="/books"
           style={{
@@ -54,6 +54,19 @@ export default function HomePage() {
           }}
         >
           Reserve Study Rooms →
+        </Link>
+        <Link
+          href="/dashboard"
+          style={{
+            padding: "1rem 2rem",
+            background: "#7928ca",
+            color: "white",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          View Dashboard →
         </Link>
       </div>
     </main>
