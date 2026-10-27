@@ -1,26 +1,61 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-export default function Home() {
-  const [message, setMessage] = useState<string>('Loading...');
+export default function HomePage() {
+  const [status, setStatus] = useState<string>("Checking backend connection...");
 
   useEffect(() => {
-    fetch('http://localhost:8000/')
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch(() => setMessage('Failed to connect to FastAPI backend'));
-    fetch('http://localhost:8000/health')
-      .then((res) => res.json())
-      .then((data) => console.log('Health check:', data))
-      .catch(() => console.log('Failed to connect to FastAPI backend for health check'));
+    async function checkHealth() {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/");
+        const data = await res.json();
+        console.log("Health check response:", data);
+        setStatus(data.message || "Libro API Active");
+      } catch (err) {
+        console.error("Backend offline:", err);
+        setStatus("Backend Disconnected");
+      }
+    }
+    checkHealth();
   }, []);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-slate-900 text-white">
-      <h1 className="text-4xl font-bold mb-4">Frontend (Next.js + TS)</h1>
-      <p className="text-xl text-emerald-400">Backend Response: {message}</p>
-      <p className = "text-xl text-emerald-400">Health check response is logged in the console.</p>
+    <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "800px", margin: "0 auto" }}>
+      <h1>Libro Library Portal</h1>
+      <p style={{ color: "#666" }}>
+        Backend Status: <strong style={{ color: "green" }}>{status}</strong>
+      </p>
+
+      <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
+        <Link
+          href="/books"
+          style={{
+            padding: "1rem 2rem",
+            background: "#0070f3",
+            color: "white",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Browse Books →
+        </Link>
+        <Link
+          href="/rooms"
+          style={{
+            padding: "1rem 2rem",
+            background: "#17c964",
+            color: "white",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Reserve Study Rooms →
+        </Link>
+      </div>
     </main>
   );
 }

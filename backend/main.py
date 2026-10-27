@@ -1,7 +1,7 @@
 import sys
 import os
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,12 +26,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # --- Pydantic Schemas ---
 class RoomReservationRequest(BaseModel):
     user_id: str
     room_id: str
     start_time: datetime
     end_time: datetime
+
 
 class BookCheckoutRequest(BaseModel):
     user_id: str
@@ -42,6 +44,7 @@ class BookCheckoutRequest(BaseModel):
 @app.get("/")
 def read_root():
     return {"message": "Libro API Active"}
+
 
 @app.get("/health")
 def health_check():
@@ -59,15 +62,26 @@ def get_books(title: str = None, author: str = None, db=Depends(get_db)):
     res = query.execute()
     return res.data
 
+
 @app.post("/api/books/checkout")
 def checkout_book(req: BookCheckoutRequest, db=Depends(get_db)):
-    due_date = datetime.utcnow() + timedelta(days=14)
+    # Check if book exists and is available
+    book = db.table("books").select("*").eq("id", req.book_id).execute()
+    if not book.data or not book.data[0].get("is_available", True):
+        raise HTTPException(status_code=400, detail="Book is not available for checkout.")
+
+    due_date = datetime.now(timezone.utc) + timedelta(days=14)
+    
+    # 1. Create book loan record
     res = db.table("book_loans").insert({
         "user_id": req.user_id,
         "book_id": req.book_id,
         "due_date": due_date.isoformat(),
         "status": "checked_out"
     }).execute()
+
+    # 2. Update book availability in database
+    db.table("books").update({"is_available": False}).eq("id", req.book_id).execute()
 
     return {"message": "Book checked out successfully", "due_date": due_date, "data": res.data}
 
@@ -77,6 +91,7 @@ def checkout_book(req: BookCheckoutRequest, db=Depends(get_db)):
 def get_study_rooms(db=Depends(get_db)):
     res = db.table("study_rooms").select("*, libraries(name, location)").execute()
     return res.data
+
 
 @app.post("/api/reservations/rooms")
 def reserve_study_room(req: RoomReservationRequest, db=Depends(get_db)):

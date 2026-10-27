@@ -8,7 +8,7 @@ interface StudyRoom {
   capacity: number;
   has_whiteboard: boolean;
   has_display: boolean;
-  libraries: {
+  libraries?: {
     name: string;
     location: string;
   };
@@ -23,12 +23,12 @@ export default function RoomsPage() {
     async function fetchRooms() {
       try {
         const res = await fetch("http://127.0.0.1:8000/api/rooms");
-        if (!res.ok) throw new Error(`Server status ${res.status}`);
+        if (!res.ok) throw new Error(`Server returned status ${res.status}`);
         const data = await res.json();
         setRooms(data);
       } catch (err: any) {
         console.error("Failed to fetch rooms:", err);
-        setError("Could not fetch study rooms from backend.");
+        setError("Could not load study rooms from backend.");
       } finally {
         setLoading(false);
       }
