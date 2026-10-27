@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 
 interface BookLoan {
@@ -32,7 +32,7 @@ interface UserActivity {
 }
 
 export default function DashboardPage() {
-  const userId = "00000000-0000-0000-0000-000000000000"; 
+  const [userId, setUserId] = useState<string>("00000000-0000-0000-0000-000000000000");
   const [activity, setActivity] = useState<UserActivity | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,18 @@ export default function DashboardPage() {
   const [returningId, setReturningId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  const fetchActivity = async () => {
+  // Retrieve user ID from localStorage on client render
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const activeUser = localStorage.getItem("libro_user_id");
+      if (activeUser) {
+        setUserId(activeUser);
+      }
+    }
+  }, []);
+
+  const fetchActivity = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch(`http://127.0.0.1:8000/api/users/${userId}/activity`);
       if (!res.ok) throw new Error(`Server returned status ${res.status}`);
@@ -53,11 +64,11 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchActivity();
-  }, [userId]);
+  }, [fetchActivity]);
 
   const handleReturnBook = async (loanId: string) => {
     setReturningId(loanId);
@@ -154,7 +165,7 @@ export default function DashboardPage() {
                       padding: "1.25rem",
                       marginBottom: "1rem",
                       display: "flex",
-                      justify: "space-between",
+                      justifyContent: "space-between",
                       alignItems: "center",
                       gap: "1rem",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
@@ -221,7 +232,7 @@ export default function DashboardPage() {
                       padding: "1.25rem",
                       marginBottom: "1rem",
                       display: "flex",
-                      justify: "space-between",
+                      justifyContent: "space-between",
                       alignItems: "center",
                       gap: "1rem",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.05)",

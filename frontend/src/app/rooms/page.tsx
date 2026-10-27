@@ -25,7 +25,7 @@ const generateTimeOptions = () => {
       const mStr = min === 0 ? "00" : `${min}`;
       const period = hour >= 12 ? "PM" : "AM";
       const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-      
+
       times.push({
         value: `${hStr}:${mStr}`,
         label: `${displayHour}:${mStr} ${period}`,
@@ -73,7 +73,7 @@ export default function RoomsPage() {
     setSelectedRoom(room);
     setResError(null);
     setResMessage(null);
-    
+
     // Set default reservation date to today (YYYY-MM-DD)
     const today = new Date().toISOString().split("T")[0];
     setReservationDate(today);
@@ -99,6 +99,11 @@ export default function RoomsPage() {
     setResError(null);
     setSubmitting(true);
 
+    const activeUserId =
+      typeof window !== "undefined"
+        ? localStorage.getItem("libro_user_id") || "00000000-0000-0000-0000-000000000000"
+        : "00000000-0000-0000-0000-000000000000";
+
     try {
       // Combine Date + Time strings into full ISO timestamps
       const startIso = new Date(`${reservationDate}T${startTime}:00`).toISOString();
@@ -108,7 +113,7 @@ export default function RoomsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "00000000-0000-0000-0000-000000000000",
+          user_id: activeUserId,
           room_id: selectedRoom.id,
           start_time: startIso,
           end_time: endIso,
@@ -156,7 +161,7 @@ export default function RoomsPage() {
                 borderRadius: "8px",
                 padding: "1.25rem",
                 display: "flex",
-                justify: "space-between",
+                justifyContent: "space-between",
                 alignItems: "center",
                 gap: "1rem",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
@@ -237,7 +242,7 @@ export default function RoomsPage() {
                   <select
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    style={{ padding: "0.6rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.95rem", background: "#white" }}
+                    style={{ padding: "0.6rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.95rem", background: "white" }}
                   >
                     {TIME_OPTIONS.map((t) => (
                       <option key={`start-${t.value}`} value={t.value}>
@@ -252,7 +257,7 @@ export default function RoomsPage() {
                   <select
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    style={{ padding: "0.6rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.95rem", background: "#white" }}
+                    style={{ padding: "0.6rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.95rem", background: "white" }}
                   >
                     {TIME_OPTIONS.map((t) => (
                       <option key={`end-${t.value}`} value={t.value}>

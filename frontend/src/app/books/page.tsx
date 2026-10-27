@@ -41,12 +41,17 @@ export default function BooksPage() {
     setMessage(null);
     setError(null);
 
+    const activeUserId =
+      typeof window !== "undefined"
+        ? localStorage.getItem("libro_user_id") || "00000000-0000-0000-0000-000000000000"
+        : "00000000-0000-0000-0000-000000000000";
+
     try {
       const res = await fetch("http://127.0.0.1:8000/api/books/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "00000000-0000-0000-0000-000000000000",
+          user_id: activeUserId,
           book_id: bookId,
         }),
       });
@@ -100,7 +105,7 @@ export default function BooksPage() {
                 borderRadius: "8px",
                 padding: "1.25rem",
                 display: "flex",
-                justify: "space-between",
+                justifyContent: "space-between",
                 alignItems: "center",
                 gap: "1rem",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
