@@ -50,8 +50,7 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
         zIndex: 50,
         display: "flex",
         justifyContent: "flex-end",
-        backgroundColor: "rgba(15, 23, 42, 0.45)",
-        backdropFilter: "blur(4px)",
+        backgroundColor: "rgba(24, 24, 27, 0.35)",
         transition: "opacity 0.25s ease",
       }}
       onClick={(e) => {
@@ -65,8 +64,8 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
           width: isMobile ? "100%" : "640px",
           maxWidth: "100%",
           height: "100%",
-          backgroundColor: "#ffffff",
-          boxShadow: "-8px 0 25px rgba(0, 0, 0, 0.15)",
+          backgroundColor: "#faf9f6",
+          borderLeft: "1px solid #e4e4e7",
           display: "flex",
           flexDirection: "column",
           animation: "slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -77,28 +76,27 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
         <div
           style={{
             padding: "1.25rem 1.5rem",
-            borderBottom: "1px solid #e2e8f0",
+            borderBottom: "1px solid #e4e4e7",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            backgroundColor: "#f8fafc",
+            backgroundColor: "#faf9f6",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={{ fontSize: "1.5rem" }}>⏱️</span>
             <div>
               <h2
                 style={{
                   margin: 0,
                   fontSize: "1.25rem",
-                  fontWeight: 800,
-                  color: "#0f172a",
+                  fontWeight: 600,
+                  color: "#18181b",
                   lineHeight: 1.2,
                 }}
               >
                 Study Tools & Pomodoro
               </h2>
-              <p style={{ margin: "0.15rem 0 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+              <p style={{ margin: "0.15rem 0 0 0", fontSize: "0.8rem", color: "#71717a" }}>
                 Focus session timer and study checklist
               </p>
             </div>
@@ -109,7 +107,7 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
             onClick={onClose}
             aria-label="Close Productivity Drawer"
             style={{
-              background: "#f1f5f9",
+              background: "transparent",
               border: "none",
               borderRadius: "8px",
               width: "36px",
@@ -133,27 +131,27 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
         <div
           style={{
             padding: "0.75rem 1.5rem",
-            background: "#ffffff",
-            borderBottom: "1px solid #f1f5f9",
+            background: "#faf9f6",
+            borderBottom: "1px solid #e4e4e7",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <div style={{ display: "flex", gap: "0.35rem", background: "#f1f5f9", padding: "0.25rem", borderRadius: "8px" }}>
+          <div style={{ display: "flex", gap: "0.35rem", background: "transparent", padding: "0.25rem 0" }}>
             <button
               type="button"
               onClick={() => setActiveTab("both")}
               style={{
                 border: "none",
-                background: activeTab === "both" ? "#ffffff" : "transparent",
-                color: activeTab === "both" ? "#0f172a" : "#64748b",
+                background: activeTab === "both" ? "#f4f4f5" : "transparent",
+                color: activeTab === "both" ? "#18181b" : "#71717a",
                 fontWeight: activeTab === "both" ? 700 : 500,
                 fontSize: "0.825rem",
                 padding: "0.35rem 0.75rem",
-                borderRadius: "6px",
+                borderRadius: "0",
                 cursor: "pointer",
-                boxShadow: activeTab === "both" ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+                boxShadow: "none",
               }}
             >
               Split View
@@ -163,14 +161,14 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
               onClick={() => setActiveTab("timer")}
               style={{
                 border: "none",
-                background: activeTab === "timer" ? "#ffffff" : "transparent",
-                color: activeTab === "timer" ? "#0f172a" : "#64748b",
+                background: activeTab === "timer" ? "#f4f4f5" : "transparent",
+                color: activeTab === "timer" ? "#18181b" : "#71717a",
                 fontWeight: activeTab === "timer" ? 700 : 500,
                 fontSize: "0.825rem",
                 padding: "0.35rem 0.75rem",
-                borderRadius: "6px",
+                borderRadius: "0",
                 cursor: "pointer",
-                boxShadow: activeTab === "timer" ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+                boxShadow: "none",
               }}
             >
               Timer Only
@@ -180,14 +178,14 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
               onClick={() => setActiveTab("tasks")}
               style={{
                 border: "none",
-                background: activeTab === "tasks" ? "#ffffff" : "transparent",
-                color: activeTab === "tasks" ? "#0f172a" : "#64748b",
+                background: activeTab === "tasks" ? "#f4f4f5" : "transparent",
+                color: activeTab === "tasks" ? "#18181b" : "#71717a",
                 fontWeight: activeTab === "tasks" ? 700 : 500,
                 fontSize: "0.825rem",
                 padding: "0.35rem 0.75rem",
-                borderRadius: "6px",
+                borderRadius: "0",
                 cursor: "pointer",
-                boxShadow: activeTab === "tasks" ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+                boxShadow: "none",
               }}
             >
               Tasks Only
@@ -200,7 +198,7 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
             rel="noopener noreferrer"
             style={{
               fontSize: "0.8rem",
-              color: "#2563eb",
+              color: "#52525b",
               textDecoration: "none",
               fontWeight: 600,
               display: "inline-flex",
@@ -228,10 +226,10 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
             <section
               aria-label="Pomodoro Timer"
               style={{
-                background: "#f8fafc",
+                background: "#ffffff",
                 padding: "1.5rem",
-                borderRadius: "16px",
-                border: "1px solid #e2e8f0",
+                borderRadius: "0",
+                border: "1px solid #e4e4e7",
               }}
             >
               <PomodoroTimer />
@@ -256,4 +254,3 @@ export default function ProductivityDrawer({ isOpen, onClose }: ProductivityDraw
     </div>
   );
 }
-

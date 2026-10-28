@@ -19,46 +19,53 @@ export default function StudyChecklist({ onTaskChange }: StudyChecklistProps) {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load tasks from localStorage on initial render
   useEffect(() => {
     try {
       const stored = localStorage.getItem("libro_study_tasks");
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed: unknown = JSON.parse(stored);
         if (Array.isArray(parsed)) {
           setTasks(parsed);
           onTaskChange?.(parsed);
         }
       } else {
-        // Helpful starter suggestions for a library patron
         const defaults: StudyTask[] = [
-          { id: "1", title: "Review Chapter 4 lecture notes", completed: false, createdAt: Date.now() - 3600000 },
-          { id: "2", title: "Outline research paper bibliography", completed: true, createdAt: Date.now() - 7200000 },
+          {
+            id: "1",
+            title: "Review Chapter 4 lecture notes",
+            completed: false,
+            createdAt: Date.now() - 3_600_000,
+          },
+          {
+            id: "2",
+            title: "Outline research paper bibliography",
+            completed: true,
+            createdAt: Date.now() - 7_200_000,
+          },
         ];
         setTasks(defaults);
         localStorage.setItem("libro_study_tasks", JSON.stringify(defaults));
         onTaskChange?.(defaults);
       }
-    } catch (e) {
-      console.error("Failed to load study tasks from storage:", e);
+    } catch (error) {
+      console.error("Failed to load study tasks from storage:", error);
     } finally {
       setIsLoaded(true);
     }
   }, []);
 
-  // Save tasks to localStorage when updated
   const saveTasks = (updated: StudyTask[]) => {
     setTasks(updated);
     onTaskChange?.(updated);
     try {
       localStorage.setItem("libro_study_tasks", JSON.stringify(updated));
-    } catch (e) {
-      console.error("Failed to save study tasks:", e);
+    } catch (error) {
+      console.error("Failed to save study tasks:", error);
     }
   };
 
-  const handleAddTask = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleAddTask = (event?: React.FormEvent) => {
+    event?.preventDefault();
     const trimmed = newTaskTitle.trim();
     if (!trimmed) return;
 
@@ -69,33 +76,30 @@ export default function StudyChecklist({ onTaskChange }: StudyChecklistProps) {
       createdAt: Date.now(),
     };
 
-    const updated = [newTask, ...tasks];
-    saveTasks(updated);
+    saveTasks([newTask, ...tasks]);
     setNewTaskTitle("");
   };
 
   const handleToggleTask = (id: string) => {
-    const updated = tasks.map((task) =>
-      task.id === id ? { ...task, completed: !task.completed } : task
+    saveTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task,
+      ),
     );
-    saveTasks(updated);
   };
 
   const handleDeleteTask = (id: string) => {
-    const updated = tasks.filter((task) => task.id !== id);
-    saveTasks(updated);
+    saveTasks(tasks.filter((task) => task.id !== id));
   };
 
-  // Alternative Path 6a: Clear Completed Tasks
   const handleClearCompleted = () => {
-    const updated = tasks.filter((task) => !task.completed);
-    saveTasks(updated);
+    saveTasks(tasks.filter((task) => !task.completed));
   };
 
-  const completedCount = tasks.filter((t) => t.completed).length;
+  const completedCount = tasks.filter((task) => task.completed).length;
   const totalCount = tasks.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-
+  const progressPercent =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const filteredTasks = tasks.filter((task) => {
     if (filter === "pending") return !task.completed;
     if (filter === "completed") return task.completed;
@@ -104,256 +108,136 @@ export default function StudyChecklist({ onTaskChange }: StudyChecklistProps) {
 
   if (!isLoaded) {
     return (
-      <div style={{ padding: "1.5rem", textAlign: "center", color: "#6b7280" }}>
-        Loading study checklist...
-      </div>
+      <p role="status" className="py-6 text-center text-sm text-zinc-500">
+        Loading study checklist…
+      </p>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: "1.25rem" }}>
-      {/* Header and Summary */}
-      <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.5rem" }}>
-          <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "#111827" }}>
-            Study Objectives
-          </h3>
-          <span style={{ fontSize: "0.85rem", color: "#4b5563", fontWeight: 600 }}>
-            {completedCount} / {totalCount} done ({progressPercent}%)
+    <section className="flex h-full flex-col gap-5">
+      <header>
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+              Session plan
+            </p>
+            <h3 className="mt-1 text-lg font-medium tracking-tight text-zinc-950">
+              Study objectives
+            </h3>
+          </div>
+          <span className="font-mono text-xs tabular-nums text-zinc-500">
+            {completedCount} / {totalCount}
           </span>
         </div>
-
-        {/* Progress bar */}
         <div
-          style={{
-            width: "100%",
-            height: "6px",
-            background: "#e5e7eb",
-            borderRadius: "999px",
-            overflow: "hidden",
-          }}
+          role="progressbar"
+          aria-label="Study objectives completed"
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          className="h-1 bg-zinc-100"
         >
           <div
-            style={{
-              width: `${progressPercent}%`,
-              height: "100%",
-              background: progressPercent === 100 ? "#10b981" : "#3b82f6",
-              transition: "width 0.3s ease",
-            }}
+            className="h-full bg-zinc-800 transition-[width] duration-300"
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
-      </div>
+      </header>
 
-      {/* Input Form: Add Task */}
-      <form
-        onSubmit={handleAddTask}
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          alignItems: "stretch",
-        }}
-      >
+      <form onSubmit={handleAddTask} className="flex gap-2">
         <input
           type="text"
           value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          placeholder="e.g. Read 20 pages of Organic Chemistry..."
+          onChange={(event) => setNewTaskTitle(event.target.value)}
+          placeholder="Add an objective"
           aria-label="Target study objective"
-          style={{
-            flex: 1,
-            padding: "0.65rem 0.85rem",
-            fontSize: "0.925rem",
-            border: "1.5px solid #d1d5db",
-            borderRadius: "8px",
-            outline: "none",
-            backgroundColor: "#fff",
-            color: "#111827",
-            transition: "border-color 0.15s ease",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = "#3b82f6")}
-          onBlur={(e) => (e.target.style.borderColor = "#d1d5db")}
+          className="min-w-0 flex-1 border-b border-zinc-300 bg-transparent px-1 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-900"
         />
         <button
           type="submit"
           disabled={!newTaskTitle.trim()}
-          style={{
-            padding: "0.65rem 1.15rem",
-            background: newTaskTitle.trim() ? "#2563eb" : "#9ca3af",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "8px",
-            fontWeight: 600,
-            fontSize: "0.9rem",
-            cursor: newTaskTitle.trim() ? "pointer" : "not-allowed",
-            whiteSpace: "nowrap",
-            transition: "background-color 0.2s ease",
-          }}
+          className="border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Add Task
+          Add
         </button>
       </form>
 
-      {/* Filter Tabs and Bulk Actions */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "0.5rem",
-          fontSize: "0.85rem",
-        }}
-      >
-        <div style={{ display: "flex", gap: "0.25rem", background: "#f3f4f6", padding: "0.2rem", borderRadius: "6px" }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-3">
+        <div className="flex gap-4 text-xs text-zinc-500">
           {(["all", "pending", "completed"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setFilter(tab)}
-              style={{
-                border: "none",
-                background: filter === tab ? "#ffffff" : "transparent",
-                color: filter === tab ? "#111827" : "#6b7280",
-                fontWeight: filter === tab ? 600 : 500,
-                padding: "0.25rem 0.65rem",
-                borderRadius: "5px",
-                cursor: "pointer",
-                boxShadow: filter === tab ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
-                textTransform: "capitalize",
-              }}
+              aria-pressed={filter === tab}
+              className={`capitalize transition-colors ${
+                filter === tab
+                  ? "font-medium text-zinc-950"
+                  : "hover:text-zinc-800"
+              }`}
             >
               {tab}
             </button>
           ))}
         </div>
-
-        {/* Alternative Path 6a: Clear Completed */}
         {completedCount > 0 && (
           <button
             type="button"
             onClick={handleClearCompleted}
-            title="Purge checked items while maintaining remaining pending tasks"
-            style={{
-              background: "transparent",
-              color: "#dc2626",
-              border: "1px solid #fca5a5",
-              borderRadius: "6px",
-              padding: "0.25rem 0.6rem",
-              fontSize: "0.8rem",
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.3rem",
-            }}
+            className="text-xs text-zinc-500 transition-colors hover:text-zinc-950"
           >
-            <span>🗑️ Clear Completed ({completedCount})</span>
+            Clear completed ({completedCount})
           </button>
         )}
       </div>
 
-      {/* Task List */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          minHeight: "180px",
-          maxHeight: "360px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.5rem",
-          paddingRight: "0.25rem",
-        }}
-      >
+      <div className="min-h-44 max-h-80 flex-1 divide-y divide-zinc-100 overflow-y-auto">
         {filteredTasks.length === 0 ? (
-          <div
-            style={{
-              margin: "auto 0",
-              textAlign: "center",
-              padding: "2rem 1rem",
-              color: "#9ca3af",
-              background: "#f9fafb",
-              borderRadius: "8px",
-              border: "1px dashed #e5e7eb",
-            }}
-          >
-            <p style={{ margin: "0 0 0.25rem 0", fontWeight: 600, fontSize: "0.95rem" }}>
+          <div className="py-8 text-sm text-zinc-500">
+            <p className="font-medium text-zinc-700">
               {filter === "completed"
                 ? "No completed tasks yet."
                 : filter === "pending"
-                ? "All caught up! No pending tasks."
-                : "No tasks yet."}
+                  ? "All caught up."
+                  : "No tasks yet."}
             </p>
-            <p style={{ margin: 0, fontSize: "0.85rem" }}>
-              {filter === "all" ? "Add study goals above to track your session progress." : ""}
-            </p>
+            {filter === "all" && (
+              <p className="mt-1 text-xs">
+                Add an objective above to plan your session.
+              </p>
+            )}
           </div>
         ) : (
           filteredTasks.map((task) => (
             <div
               key={task.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                padding: "0.65rem 0.85rem",
-                background: task.completed ? "#f9fafb" : "#ffffff",
-                border: task.completed ? "1px solid #e5e7eb" : "1px solid #e2e8f0",
-                borderRadius: "8px",
-                transition: "all 0.15s ease",
-                boxShadow: task.completed ? "none" : "0 1px 2px rgba(0,0,0,0.03)",
-              }}
+              className="group flex items-center gap-3 py-3"
             >
-              {/* Checkbox */}
               <input
                 type="checkbox"
                 checked={task.completed}
                 onChange={() => handleToggleTask(task.id)}
                 aria-label={`Mark "${task.title}" as ${task.completed ? "incomplete" : "complete"}`}
-                style={{
-                  width: "1.15rem",
-                  height: "1.15rem",
-                  cursor: "pointer",
-                  accentColor: "#2563eb",
-                  flexShrink: 0,
-                }}
+                className="h-4 w-4 shrink-0 cursor-pointer appearance-none border border-zinc-300 checked:border-zinc-800 checked:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-700"
               />
-
-              {/* Title */}
-              <span
+              <button
+                type="button"
                 onClick={() => handleToggleTask(task.id)}
-                style={{
-                  flex: 1,
-                  fontSize: "0.925rem",
-                  color: task.completed ? "#9ca3af" : "#1f2937",
-                  textDecoration: task.completed ? "line-through" : "none",
-                  cursor: "pointer",
-                  wordBreak: "break-word",
-                  userSelect: "none",
-                }}
+                className={`min-w-0 flex-1 break-words text-left text-sm transition-colors ${
+                  task.completed
+                    ? "text-zinc-400 line-through"
+                    : "text-zinc-800"
+                }`}
               >
                 {task.title}
-              </span>
-
-              {/* Delete Button */}
+              </button>
               <button
                 type="button"
                 onClick={() => handleDeleteTask(task.id)}
                 title="Remove task"
                 aria-label="Remove task"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#9ca3af",
-                  cursor: "pointer",
-                  padding: "0.2rem 0.4rem",
-                  borderRadius: "4px",
-                  fontSize: "1rem",
-                  lineHeight: 1,
-                  transition: "color 0.15s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#9ca3af")}
+                className="px-1 text-lg leading-none text-zinc-400 transition-colors hover:text-zinc-900"
               >
                 ×
               </button>
@@ -361,7 +245,6 @@ export default function StudyChecklist({ onTaskChange }: StudyChecklistProps) {
           ))
         )}
       </div>
-    </div>
+    </section>
   );
 }
-

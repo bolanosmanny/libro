@@ -168,43 +168,40 @@ export default function RoomsPage() {
   }, [rooms, searchQuery, capacityFilter, requireWhiteboard, requireDisplay]);
 
   return (
-    <main className="min-h-[calc(100vh-65px)] bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 text-slate-900">
+    <main className="min-h-screen bg-[#faf9f6] px-5 py-10 text-zinc-900 sm:px-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-10 flex flex-col gap-5 border-b border-zinc-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏛️</span>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                Study Room Reservations
-              </h1>
-            </div>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mb-3 font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">Spaces</p>
+            <h1 className="text-4xl font-medium tracking-tight text-zinc-950 sm:text-5xl">
+              Study rooms
+            </h1>
+            <p className="mt-3 text-sm text-zinc-500">
               Reserve quiet individual study spaces and collaborative group rooms at Addlestone Library.
             </p>
           </div>
 
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+            className="self-start border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:border-zinc-500 hover:text-zinc-950"
           >
-            <span>📋 View Your Reservations</span>
-            <span>→</span>
+            View reservations <span aria-hidden="true">→</span>
           </Link>
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <div className="mb-6 border border-red-200 bg-white p-4 text-sm text-red-800">
             {error}
           </div>
         )}
 
         {/* Filter and Criteria Card */}
-        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-8 border-y border-zinc-200 bg-white p-5">
           <div className="grid gap-4 md:grid-cols-4 md:items-end">
             {/* Search room number */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label               className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                 Room Number
               </label>
               <input
@@ -284,17 +281,16 @@ export default function RoomsPage() {
         {loading && (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="h-48 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+              <div key={n} className="h-16 animate-pulse border-b border-zinc-200 bg-white" />
             ))}
           </div>
         )}
 
         {/* Empty state */}
         {!loading && filteredRooms.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-            <span className="text-4xl">🏛️</span>
-            <h3 className="mt-3 text-base font-semibold text-slate-900">No study rooms match your filters</h3>
-            <p className="mt-1 text-xs text-slate-500">
+          <div className="border-y border-zinc-200 bg-white p-12 text-center">
+            <h3 className="text-base font-medium text-zinc-900">No study rooms match your filters</h3>
+            <p className="mt-2 text-xs text-zinc-500">
               Try adjusting your capacity requirements or clearing selected amenities.
             </p>
           </div>
@@ -302,59 +298,57 @@ export default function RoomsPage() {
 
         {/* Room Grid */}
         {!loading && filteredRooms.length > 0 && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white">
             {filteredRooms.map((room) => (
               <div
                 key={room.id}
-                className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                className="grid gap-5 px-5 py-5 transition-colors hover:bg-zinc-50/70 sm:grid-cols-[1fr_auto] sm:items-center"
               >
                 <div>
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-xs font-bold text-teal-700 uppercase tracking-wide">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                         {room.libraries?.name || "Addlestone Library"}
                       </span>
-                      <h3 className="mt-1 text-xl font-bold text-slate-900">
+                      <h3 className="mt-1 text-lg font-medium tracking-tight text-zinc-950">
                         {room.room_number.toLowerCase().startsWith("room")
                           ? room.room_number
                           : `Room ${room.room_number}`}
                       </h3>
                     </div>
 
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                      👥 Seats {room.capacity}
+                    <span className="font-mono text-xs tabular-nums text-zinc-600">
+                      {room.capacity} seats
                     </span>
                   </div>
 
                   {/* Amenities Badges */}
-                  <div className="mt-4 flex flex-wrap gap-1.5">
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
                     {room.has_whiteboard && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 border border-blue-200">
-                        <span>🖊️</span> Whiteboard
+                      <span className="text-xs text-zinc-600">
+                        Whiteboard
                       </span>
                     )}
                     {room.has_display && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-1 text-[11px] font-medium text-purple-700 border border-purple-200">
-                        <span>🖥️</span> Display Screen
+                      <span className="text-xs text-zinc-600">
+                        Display
                       </span>
                     )}
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 border border-emerald-200">
-                      <span>♿</span> Accessible
-                    </span>
+                    <span className="text-xs text-zinc-600">Accessible</span>
                   </div>
 
-                  <p className="mt-4 text-xs text-slate-500">
-                    Location: {room.libraries?.location || "2nd & 3rd Floor Quiet Zones"}
+                  <p className="mt-2 text-xs text-zinc-500">
+                    {room.libraries?.location || "2nd & 3rd Floor Quiet Zones"}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100">
+                <div className="sm:w-44">
                   <button
                     type="button"
                     onClick={() => openReservationModal(room)}
-                    className="w-full rounded-xl bg-teal-600 py-2.5 text-center text-xs font-bold text-white shadow-sm transition hover:bg-teal-500"
+                    className="w-full border border-zinc-900 bg-zinc-900 py-2.5 text-center text-xs font-medium text-white transition hover:bg-zinc-700"
                   >
-                    Select & Reserve Room →
+                    Reserve room <span aria-hidden="true">→</span>
                   </button>
                 </div>
               </div>
@@ -367,37 +361,36 @@ export default function RoomsPage() {
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm animate-fadeIn"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-sm animate-fadeIn"
             onClick={(e) => {
               if (e.target === e.currentTarget && !submitting) {
                 setSelectedRoom(null);
               }
             }}
           >
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="w-full max-w-lg border border-zinc-200 bg-[#faf9f6] p-6">
               {/* If booked successfully, show confirmation screen */}
               {bookingConfirmationId ? (
                 <div className="text-center py-4">
-                  <span className="text-4xl">🎉</span>
-                  <h3 className="mt-3 text-xl font-bold text-slate-900">
+                  <h3 className="text-xl font-medium tracking-tight text-zinc-950">
                     Reservation Confirmed!
                   </h3>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-2 text-sm text-zinc-600">
                     Room {selectedRoom.room_number} is reserved for you.
                   </p>
 
-                  <div className="mt-5 rounded-xl bg-slate-50 p-4 text-left text-xs space-y-2 border border-slate-200">
+                  <div className="mt-5 space-y-2 border-y border-zinc-200 bg-white p-4 text-left text-xs">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-slate-500">Confirmation Ref:</span>
-                      <span className="font-mono font-bold text-slate-800">{bookingConfirmationId}</span>
+                      <span className="text-zinc-500">Confirmation ref.</span>
+                      <span className="font-mono text-zinc-800">{bookingConfirmationId}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-semibold text-slate-500">Date:</span>
-                      <span className="font-bold text-slate-800">{reservationDate}</span>
+                      <span className="text-zinc-500">Date</span>
+                      <span className="font-mono text-zinc-800">{reservationDate}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-semibold text-slate-500">Time Window:</span>
-                      <span className="font-bold text-slate-800">
+                      <span className="text-zinc-500">Time</span>
+                      <span className="font-mono text-zinc-800">
                         {TIME_OPTIONS.find((t) => t.value === startTime)?.label} –{" "}
                         {TIME_OPTIONS.find((t) => t.value === endTime)?.label}
                       </span>
@@ -408,15 +401,15 @@ export default function RoomsPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedRoom(null)}
-                      className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="flex-1 border border-zinc-300 py-2.5 text-xs font-medium text-zinc-700 hover:border-zinc-500"
                     >
                       Book Another Room
                     </button>
                     <Link
                       href="/dashboard"
-                      className="flex-1 rounded-xl bg-teal-600 py-2.5 text-xs font-bold text-white text-center hover:bg-teal-500"
+                      className="flex-1 border border-zinc-900 bg-zinc-900 py-2.5 text-center text-xs font-medium text-white hover:bg-zinc-700"
                     >
-                      View in Your Activity →
+                      View in activity <span aria-hidden="true">→</span>
                     </Link>
                   </div>
                 </div>
@@ -424,13 +417,13 @@ export default function RoomsPage() {
                 <form onSubmit={handleReserve}>
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-xs font-bold text-teal-700 uppercase">Booking Workflow</span>
-                      <h3 className="mt-1 text-xl font-bold text-slate-900">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">Reservation</span>
+                      <h3 className="mt-1 text-xl font-medium tracking-tight text-zinc-950">
                         Reserve {selectedRoom.room_number.toLowerCase().startsWith("room")
                           ? selectedRoom.room_number
                           : `Room ${selectedRoom.room_number}`}
                       </h3>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-zinc-500">
                         Capacity: {selectedRoom.capacity} people • {selectedRoom.libraries?.name || "Addlestone Library"}
                       </p>
                     </div>
@@ -445,7 +438,7 @@ export default function RoomsPage() {
 
                   {resError && (
                     <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
-                      ⚠️ {resError}
+                      {resError}
                     </div>
                   )}
 
@@ -461,7 +454,7 @@ export default function RoomsPage() {
                         min={new Date().toISOString().split("T")[0]}
                         onChange={(e) => setReservationDate(e.target.value)}
                         required
-                        className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
+                        className="w-full border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900"
                       />
                     </div>
 
@@ -474,7 +467,7 @@ export default function RoomsPage() {
                         <select
                           value={startTime}
                           onChange={(e) => setStartTime(e.target.value)}
-                          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
+                          className="w-full border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900"
                         >
                           {TIME_OPTIONS.map((t) => (
                             <option key={`start-${t.value}`} value={t.value}>
@@ -491,7 +484,7 @@ export default function RoomsPage() {
                         <select
                           value={endTime}
                           onChange={(e) => setEndTime(e.target.value)}
-                          className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
+                          className="w-full border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900"
                         >
                           {TIME_OPTIONS.map((t) => (
                             <option key={`end-${t.value}`} value={t.value}>
@@ -502,8 +495,8 @@ export default function RoomsPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl bg-slate-50 p-3 text-[11px] text-slate-500 leading-relaxed">
-                      💡 Policy notice: Reservations can be cancelled online up to 15 minutes before the start time. Check in with library staff at the 1st floor desk if you need assistance.
+                    <div className="border-l-2 border-zinc-300 bg-white p-3 text-[11px] leading-relaxed text-zinc-500">
+                      Policy notice: Reservations can be cancelled online up to 15 minutes before the start time. Check in with library staff at the 1st floor desk if you need assistance.
                     </div>
                   </div>
 
@@ -512,14 +505,14 @@ export default function RoomsPage() {
                       type="button"
                       onClick={() => setSelectedRoom(null)}
                       disabled={submitting}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="border border-zinc-300 px-4 py-2 text-xs font-medium text-zinc-700 hover:border-zinc-500"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="rounded-xl bg-teal-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-500 disabled:opacity-50"
+                      className="border border-zinc-900 bg-zinc-900 px-5 py-2 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
                     >
                       {submitting ? "Verifying Availability..." : "Confirm Reservation"}
                     </button>

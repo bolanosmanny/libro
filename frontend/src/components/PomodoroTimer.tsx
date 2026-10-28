@@ -104,9 +104,9 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
     const formatted = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
     const modeLabels: Record<TimerMode, string> = {
-      focus: "🎯 Focus",
-      shortBreak: "☕ Short Break",
-      longBreak: "🌿 Long Break",
+      focus: "Focus",
+      shortBreak: "Short Break",
+      longBreak: "Long Break",
     };
 
     if (isRunning) {
@@ -136,7 +136,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
     // 2. Browser Desktop Notification
     if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
       try {
-        const title = mode === "focus" ? "🎉 Focus Session Finished!" : "⏰ Break Finished!";
+        const title = mode === "focus" ? "Focus session finished" : "Break finished";
         const body =
           mode === "focus"
             ? "Awesome work! Take a break to refresh your mind."
@@ -160,7 +160,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
       setPromptModal({
         isOpen: true,
         type: "focusCompleted",
-        title: "🎉 Focus Session Complete!",
+        title: "Focus session complete",
         message: isLongBreakTime
           ? `Outstanding! You've finished ${newCount} focus sessions. Time for an extended ${settings.longBreakDuration}-minute break!`
           : `Great job! You've finished session #${newCount}. Take a short ${settings.shortBreakDuration}-minute break to recharge.`,
@@ -170,7 +170,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
       setPromptModal({
         isOpen: true,
         type: "breakCompleted",
-        title: "☕ Break Complete!",
+        title: "Break complete",
         message: "Your break is finished. Ready to start your next focus session?",
       });
     }
@@ -278,36 +278,31 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
   const seconds = timeLeft % 60;
   const formattedTime = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  // Circular Timer Bar geometry (SVG)
-  const radius = 100;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
-
   // Theme styling based on mode
   const modeColors = {
     focus: {
-      primary: "#2563eb",
-      light: "#eff6ff",
-      accent: "#3b82f6",
-      text: "#1e40af",
+      primary: "#27272a",
+      light: "#fafafa",
+      accent: "#52525b",
+      text: "#3f3f46",
       badge: "Focus Session",
-      badgeBg: "#dbeafe",
+      badgeBg: "#f4f4f5",
     },
     shortBreak: {
-      primary: "#10b981",
-      light: "#ecfdf5",
-      accent: "#34d399",
-      text: "#065f46",
+      primary: "#27272a",
+      light: "#fafafa",
+      accent: "#52525b",
+      text: "#3f3f46",
       badge: "Short Break",
-      badgeBg: "#d1fae5",
+      badgeBg: "#f4f4f5",
     },
     longBreak: {
-      primary: "#8b5cf6",
-      light: "#f5f3ff",
-      accent: "#a78bfa",
-      text: "#5b21b6",
+      primary: "#27272a",
+      light: "#fafafa",
+      accent: "#52525b",
+      text: "#3f3f46",
       badge: "Long Break",
-      badgeBg: "#ede9fe",
+      badgeBg: "#f4f4f5",
     },
   }[mode];
 
@@ -328,7 +323,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
         style={{
           display: "flex",
           gap: "0.35rem",
-          background: "#f1f5f9",
+          background: "#fafafa",
           padding: "0.35rem",
           borderRadius: "12px",
           marginBottom: "1.5rem",
@@ -347,17 +342,17 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             padding: "0.55rem 0.5rem",
             fontSize: "0.85rem",
             fontWeight: mode === "focus" ? 700 : 500,
-            color: mode === "focus" ? "#1e40af" : "#64748b",
+            color: mode === "focus" ? "#18181b" : "#71717a",
             background: mode === "focus" ? "#ffffff" : "transparent",
-            border: "none",
-            borderRadius: "8px",
+            border: mode === "focus" ? "1px solid #d4d4d8" : "1px solid transparent",
+            borderRadius: "0",
             cursor: "pointer",
             transition: "all 0.2s ease",
-            boxShadow: mode === "focus" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
+            boxShadow: "none",
             whiteSpace: "nowrap",
           }}
         >
-          🎯 Focus ({settings.focusDuration}m)
+          Focus · {settings.focusDuration}m
         </button>
         <button
           type="button"
@@ -369,17 +364,17 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             padding: "0.55rem 0.5rem",
             fontSize: "0.85rem",
             fontWeight: mode === "shortBreak" ? 700 : 500,
-            color: mode === "shortBreak" ? "#065f46" : "#64748b",
+            color: mode === "shortBreak" ? "#18181b" : "#71717a",
             background: mode === "shortBreak" ? "#ffffff" : "transparent",
-            border: "none",
-            borderRadius: "8px",
+            border: mode === "shortBreak" ? "1px solid #d4d4d8" : "1px solid transparent",
+            borderRadius: "0",
             cursor: "pointer",
             transition: "all 0.2s ease",
-            boxShadow: mode === "shortBreak" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
+            boxShadow: "none",
             whiteSpace: "nowrap",
           }}
         >
-          ☕ Short ({settings.shortBreakDuration}m)
+          Short break · {settings.shortBreakDuration}m
         </button>
         <button
           type="button"
@@ -391,134 +386,35 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             padding: "0.55rem 0.5rem",
             fontSize: "0.85rem",
             fontWeight: mode === "longBreak" ? 700 : 500,
-            color: mode === "longBreak" ? "#5b21b6" : "#64748b",
+            color: mode === "longBreak" ? "#18181b" : "#71717a",
             background: mode === "longBreak" ? "#ffffff" : "transparent",
-            border: "none",
-            borderRadius: "8px",
+            border: mode === "longBreak" ? "1px solid #d4d4d8" : "1px solid transparent",
+            borderRadius: "0",
             cursor: "pointer",
             transition: "all 0.2s ease",
-            boxShadow: mode === "longBreak" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
+            boxShadow: "none",
             whiteSpace: "nowrap",
           }}
         >
-          🌿 Long ({settings.longBreakDuration}m)
+          Long break · {settings.longBreakDuration}m
         </button>
       </div>
 
-      {/* Visual Timer: Circular Bar & Digital Countdown Display */}
-      <div
-        style={{
-          position: "relative",
-          width: "240px",
-          height: "240px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: "1rem",
-        }}
-      >
-        <svg
-          width="240"
-          height="240"
-          viewBox="0 0 240 240"
-          style={{
-            transform: "rotate(-90deg)",
-            transformOrigin: "50% 50%",
-          }}
-        >
-          {/* Background Track */}
-          <circle
-            cx="120"
-            cy="120"
-            r={radius}
-            stroke="#e2e8f0"
-            strokeWidth="12"
-            fill="transparent"
+      <div className="mb-5 text-center">
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+          {modeColors.badge}
+        </p>
+        <p className="font-mono text-6xl font-light leading-none tracking-tighter text-zinc-950 tabular-nums md:text-8xl">
+          {formattedTime}
+        </p>
+        <p className="mt-4 inline-flex items-center gap-2 text-xs text-zinc-500">
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              isRunning ? "bg-emerald-700" : "bg-zinc-300"
+            }`}
           />
-          {/* Visual Timer Bar (Progress Circle) */}
-          <circle
-            cx="120"
-            cy="120"
-            r={radius}
-            stroke={modeColors.primary}
-            strokeWidth="12"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            fill="transparent"
-            style={{
-              transition: isRunning ? "stroke-dashoffset 0.3s ease" : "stroke-dashoffset 0.15s ease",
-            }}
-          />
-        </svg>
-
-        {/* Center Digital Display */}
-        <div
-          style={{
-            position: "absolute",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-          }}
-        >
-          {/* Mode status badge */}
-          <span
-            style={{
-              background: modeColors.badgeBg,
-              color: modeColors.text,
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              padding: "0.2rem 0.6rem",
-              borderRadius: "999px",
-              marginBottom: "0.35rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            {modeColors.badge}
-          </span>
-
-          {/* Time digits */}
-          <span
-            style={{
-              fontSize: "3.25rem",
-              fontWeight: 800,
-              color: "#0f172a",
-              lineHeight: 1,
-              fontVariantNumeric: "tabular-nums",
-              fontFamily: "monospace, sans-serif",
-            }}
-          >
-            {formattedTime}
-          </span>
-
-          {/* Running/Paused indicator */}
-          <span
-            style={{
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              color: isRunning ? modeColors.primary : "#94a3b8",
-              marginTop: "0.4rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-            }}
-          >
-            <span
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: isRunning ? modeColors.primary : "#cbd5e1",
-                display: "inline-block",
-                boxShadow: isRunning ? `0 0 8px ${modeColors.primary}` : "none",
-              }}
-            />
-            {isRunning ? "Running" : timeLeft === totalSeconds ? "Ready" : "Paused"}
-          </span>
-        </div>
+          {isRunning ? "Running" : timeLeft === totalSeconds ? "Ready" : "Paused"}
+        </p>
       </div>
 
       {/* Visual Linear Progress Bar */}
@@ -527,8 +423,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           width: "100%",
           maxWidth: "340px",
           height: "6px",
-          background: "#e2e8f0",
-          borderRadius: "999px",
+          background: "#e4e4e7",
           overflow: "hidden",
           marginBottom: "1.25rem",
         }}
@@ -537,7 +432,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           style={{
             width: `${progressPercent}%`,
             height: "100%",
-            background: modeColors.primary,
+            background: "#52525b",
             transition: "width 0.3s ease",
           }}
         />
@@ -583,10 +478,10 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           title="Reset timer without clearing task list"
           style={{
             padding: "0.75rem 1rem",
-            background: "#f1f5f9",
+            background: "#ffffff",
             color: "#475569",
             border: "1px solid #e2e8f0",
-            borderRadius: "10px",
+            borderRadius: "0",
             fontWeight: 600,
             fontSize: "0.9rem",
             cursor: "pointer",
@@ -595,8 +490,8 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             alignItems: "center",
             gap: "0.4rem",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#e2e8f0")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f4f5")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
         >
           <span>↺ Reset</span>
         </button>
@@ -608,14 +503,14 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           style={{
             flex: 1,
             padding: "0.75rem 1.5rem",
-            background: isRunning ? "#ef4444" : modeColors.primary,
+            background: "#27272a",
             color: "#ffffff",
             border: "none",
-            borderRadius: "10px",
+            borderRadius: "0",
             fontWeight: 700,
             fontSize: "1.05rem",
             cursor: "pointer",
-            boxShadow: `0 4px 12px ${isRunning ? "rgba(239,68,68,0.25)" : "rgba(37,99,235,0.25)"}`,
+            boxShadow: "none",
             transition: "all 0.15s ease",
             display: "flex",
             alignItems: "center",
@@ -623,7 +518,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             gap: "0.5rem",
           }}
         >
-          {isRunning ? "⏸ Pause" : timeLeft === totalSeconds ? "▶ Start Session" : "▶ Resume"}
+          {isRunning ? "Pause" : timeLeft === totalSeconds ? "Start" : "Resume"}
         </button>
 
         {/* Skip button */}
@@ -633,10 +528,10 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           title="Skip to next phase"
           style={{
             padding: "0.75rem 1rem",
-            background: "#f1f5f9",
+            background: "#ffffff",
             color: "#475569",
             border: "1px solid #e2e8f0",
-            borderRadius: "10px",
+            borderRadius: "0",
             fontWeight: 600,
             fontSize: "0.9rem",
             cursor: "pointer",
@@ -645,10 +540,10 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             alignItems: "center",
             gap: "0.4rem",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#e2e8f0")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f4f4f5")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
         >
-          <span>⏭ Skip</span>
+          <span>Skip</span>
         </button>
       </div>
 
@@ -661,7 +556,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           width: "100%",
           maxWidth: "360px",
           paddingTop: "0.5rem",
-          borderTop: "1px solid #f1f5f9",
+          borderTop: "1px solid #e4e4e7",
           fontSize: "0.825rem",
           color: "#64748b",
         }}
@@ -676,7 +571,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           style={{
             background: "transparent",
             border: "none",
-            color: "#2563eb",
+            color: "#3f3f46",
             fontWeight: 600,
             cursor: "pointer",
             display: "inline-flex",
@@ -686,7 +581,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             borderRadius: "6px",
           }}
         >
-          ⚙️ Customize Intervals
+          Customize intervals
         </button>
 
         {/* Sound Toggle */}
@@ -696,9 +591,9 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             onClick={handleToggleSound}
             title={soundEnabled ? "Mute audio alert chime" : "Unmute audio alert chime"}
             style={{
-              background: soundEnabled ? "#f0fdf4" : "#fef2f2",
-              color: soundEnabled ? "#166534" : "#991b1b",
-              border: `1px solid ${soundEnabled ? "#bbf7d0" : "#fecaca"}`,
+              background: "#ffffff",
+              color: "#52525b",
+              border: "1px solid #d4d4d8",
               padding: "0.25rem 0.5rem",
               borderRadius: "6px",
               cursor: "pointer",
@@ -706,7 +601,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
               fontSize: "0.8rem",
             }}
           >
-            {soundEnabled ? "🔔 Chime: On" : "🔕 Chime: Off"}
+            {soundEnabled ? "Chime: On" : "Chime: Off"}
           </button>
 
           {notificationPermission !== "granted" && (
@@ -741,7 +636,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.6)",
+            backgroundColor: "rgba(24, 24, 27, 0.45)",
             backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
@@ -753,24 +648,16 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           <div
             style={{
               background: "#ffffff",
-              borderRadius: "16px",
+              borderRadius: "0",
               maxWidth: "440px",
               width: "100%",
               padding: "2rem",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              border: "1px solid #e4e4e7",
+              boxShadow: "none",
               textAlign: "center",
               animation: "fadeIn 0.2s ease-out",
             }}
           >
-            <div
-              style={{
-                fontSize: "3rem",
-                marginBottom: "0.75rem",
-              }}
-            >
-              {promptModal.type === "focusCompleted" ? "🎉" : "☕"}
-            </div>
-
             <h3
               id="prompt-title"
               style={{
@@ -806,10 +693,10 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
                     }}
                     style={{
                       padding: "0.8rem 1.2rem",
-                      background: "#10b981",
+                      background: "#27272a",
                       color: "#ffffff",
                       border: "none",
-                      borderRadius: "10px",
+                      borderRadius: "0",
                       fontWeight: 700,
                       fontSize: "0.95rem",
                       cursor: "pointer",
@@ -827,10 +714,10 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
                     }}
                     style={{
                       padding: "0.75rem 1.2rem",
-                      background: "#8b5cf6",
+                      background: "#52525b",
                       color: "#ffffff",
                       border: "none",
-                      borderRadius: "10px",
+                      borderRadius: "0",
                       fontWeight: 700,
                       fontSize: "0.95rem",
                       cursor: "pointer",
@@ -849,9 +736,9 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
                     style={{
                       padding: "0.65rem 1.2rem",
                       background: "transparent",
-                      color: "#2563eb",
-                      border: "1px solid #bfdbfe",
-                      borderRadius: "10px",
+                      color: "#3f3f46",
+                      border: "1px solid #d4d4d8",
+                      borderRadius: "0",
                       fontWeight: 600,
                       fontSize: "0.9rem",
                       cursor: "pointer",
@@ -870,10 +757,10 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
                   }}
                   style={{
                     padding: "0.8rem 1.2rem",
-                    background: "#2563eb",
+                    background: "#27272a",
                     color: "#ffffff",
                     border: "none",
-                    borderRadius: "10px",
+                    borderRadius: "0",
                     fontWeight: 700,
                     fontSize: "0.95rem",
                     cursor: "pointer",
@@ -915,7 +802,7 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.5)",
+            backgroundColor: "rgba(24, 24, 27, 0.4)",
             backdropFilter: "blur(3px)",
             display: "flex",
             alignItems: "center",
@@ -927,11 +814,12 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
           <div
             style={{
               background: "#ffffff",
-              borderRadius: "16px",
+              borderRadius: "0",
               maxWidth: "420px",
               width: "100%",
               padding: "1.75rem",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              border: "1px solid #e4e4e7",
+              boxShadow: "none",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
@@ -980,9 +868,9 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
                       padding: "0.4rem 0.5rem",
                       fontSize: "0.8rem",
                       fontWeight: 600,
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: "6px",
+                      background: "#fafafa",
+                      border: "1px solid #e4e4e7",
+                      borderRadius: "0",
                       cursor: "pointer",
                       color: "#334155",
                     }}
@@ -1124,10 +1012,10 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
                     type="submit"
                     style={{
                       padding: "0.55rem 1.25rem",
-                      background: "#2563eb",
+                      background: "#27272a",
                       color: "#ffffff",
                       border: "none",
-                      borderRadius: "8px",
+                      borderRadius: "0",
                       fontWeight: 700,
                       cursor: "pointer",
                     }}
@@ -1143,4 +1031,3 @@ export default function PomodoroTimer({ onSessionComplete }: PomodoroTimerProps)
     </div>
   );
 }
-

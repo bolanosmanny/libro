@@ -33,11 +33,14 @@ interface UserActivity {
 }
 
 export default function DashboardPage() {
-  const [userId, setUserId] = useState<string>("00000000-0000-0000-0000-000000000000");
+  const [userId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : localStorage.getItem("libro_user_id"),
+  );
   const [activity, setActivity] = useState<UserActivity | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [liveTime, setLiveTime] = useState("");
 
   const [returningId, setReturningId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -50,14 +53,17 @@ export default function DashboardPage() {
   const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState(false);
   const [taskSummary, setTaskSummary] = useState({ total: 0, pending: 0 });
 
-  // Retrieve user ID from localStorage on client render
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const activeUser = localStorage.getItem("libro_user_id");
-      if (activeUser) {
-        setUserId(activeUser);
-      }
-    }
+    const updateTime = () =>
+      setLiveTime(
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      );
+    const interval = window.setInterval(updateTime, 60_000);
+    updateTime();
+    return () => window.clearInterval(interval);
   }, []);
 
   // Update study task summary
@@ -83,6 +89,13 @@ export default function DashboardPage() {
 
   const fetchActivity = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    if (!userId) {
+      setError("Your session could not be verified. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`http://127.0.0.1:8000/api/users/${userId}/activity`);
       if (!res.ok) throw new Error(`Server returned status ${res.status}`);
@@ -97,10 +110,12 @@ export default function DashboardPage() {
   }, [userId]);
 
   useEffect(() => {
-    fetchActivity();
+    if (userId) fetchActivity();
   }, [fetchActivity]);
 
   const handleReturnBook = async (loanId: string) => {
+    if (!userId) return;
+
     setReturningId(loanId);
     setActionMessage(null);
 
@@ -182,46 +197,48 @@ export default function DashboardPage() {
   const activeRoomReservations = activity?.room_reservations.filter((res) => res.status !== "cancelled") || [];
 
   return (
-    <main className="min-h-[calc(100vh-65px)] bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 text-slate-900">
+    <main className="min-h-screen bg-[#faf9f6] px-5 py-10 text-zinc-900 sm:px-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-10 flex flex-col gap-5 border-b border-zinc-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📋</span>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                Your Activity & Dashboard
-              </h1>
-            </div>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mb-3 font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">
+              Personal workspace
+            </p>
+            <h1 className="text-4xl font-medium tracking-tight text-zinc-950 sm:text-5xl">
+              Overview
+            </h1>
+            <p className="mt-3 text-sm text-zinc-500">
               Review your active book loans, upcoming study room bookings, and productivity sessions.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="font-mono text-xs tabular-nums text-zinc-500">
+              {liveTime || "—"} <span className="text-zinc-400">LOCAL</span>
+            </span>
             <button
               type="button"
               onClick={() => setIsStudyDrawerOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-teal-500"
+              className="border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:border-zinc-500 hover:text-zinc-950"
             >
-              <span>⏱️ Study Tools</span>
+              Study tools
             </button>
             <button
               type="button"
               onClick={fetchActivity}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className="px-2 py-2 text-xs font-medium text-zinc-600 transition hover:text-zinc-950"
               title="Refresh Activity"
             >
-              ↻ Refresh
+              Refresh
             </button>
           </div>
         </div>
 
         {/* Global Action Banner */}
         {actionMessage && (
-          <div className="mb-6 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 shadow-sm animate-fadeIn">
+          <div className="mb-6 flex items-center justify-between border border-emerald-200 bg-white px-4 py-3 text-sm text-emerald-800">
             <div className="flex items-center gap-2">
-              <span>✅</span>
               <span>{actionMessage}</span>
             </div>
             <button
@@ -235,73 +252,69 @@ export default function DashboardPage() {
 
         {/* Error Banner */}
         {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            ⚠️ {error}
+          <div className="mb-6 border border-red-200 bg-white p-4 text-sm text-red-800">
+              {error}
           </div>
         )}
 
         {/* Metrics Summary Strip */}
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-10 grid grid-cols-1 gap-0 border-y border-zinc-200 bg-white sm:grid-cols-3 sm:divide-x sm:divide-zinc-200">
+          <div className="p-6 sm:p-7">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                 Active Book Loans
               </span>
-              <span className="text-xl">📖</span>
             </div>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900">
+            <p className="mt-4 font-mono text-4xl font-light tabular-nums text-zinc-950">
               {loading ? "..." : activeBookLoans.length}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-zinc-500">
               {activeBookLoans.length > 0 ? "Due back within 14 days" : "No books checked out"}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="border-t border-zinc-200 p-6 sm:border-t-0 sm:p-7">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                 Room Bookings
               </span>
-              <span className="text-xl">🏛️</span>
             </div>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900">
+            <p className="mt-4 font-mono text-4xl font-light tabular-nums text-zinc-950">
               {loading ? "..." : activeRoomReservations.length}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-zinc-500">
               {activeRoomReservations.length > 0 ? "Upcoming confirmed reservations" : "No active room bookings"}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="border-t border-zinc-200 p-6 sm:border-t-0 sm:p-7">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                 Study Objectives
               </span>
-              <span className="text-xl">🎯</span>
             </div>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900">
+            <p className="mt-4 font-mono text-4xl font-light tabular-nums text-zinc-950">
               {taskSummary.pending}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-zinc-500">
               {taskSummary.pending} pending of {taskSummary.total} tasks
             </p>
           </div>
         </div>
 
         {/* Academic Productivity Session Widget (Trigger) */}
-        <section className="mb-8 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-teal-50/70 p-6 shadow-sm">
+        <section className="mb-10 border-y border-zinc-200 bg-white px-6 py-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-xl">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">⏱️</span>
-                <h2 className="text-lg font-bold text-slate-900">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-medium tracking-tight text-zinc-950">
                   Academic Productivity Session
                 </h2>
-                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                   Study Aid
                 </span>
               </div>
-              <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500">
                 Utilize built-in study aids during your library visit—including a customizable Pomodoro focus timer, gentle audio chimes, and a study task checklist.
               </p>
             </div>
@@ -310,13 +323,13 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsStudyDrawerOpen(true)}
-                className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-500"
+                className="border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-zinc-700"
               >
                 Open Study Drawer →
               </button>
               <Link
                 href="/study"
-                className="rounded-xl border border-blue-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                className="border border-zinc-300 px-3.5 py-2.5 text-xs font-medium text-zinc-700 hover:border-zinc-500"
               >
                 Full Page Mode
               </Link>
@@ -327,15 +340,15 @@ export default function DashboardPage() {
         {/* Two-Column Activity Records: Books and Study Rooms */}
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Active Book Loans Section */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+          <section className="border-y border-zinc-200 bg-white p-6">
+            <div className="mb-4 flex items-center justify-between border-b border-zinc-200 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Checked Out Books</h2>
-                <p className="text-xs text-slate-500">Currently borrowed from Addlestone Library</p>
+                <h2 className="text-lg font-medium tracking-tight text-zinc-950">Checked out books</h2>
+                <p className="text-xs text-zinc-500">Currently borrowed from Addlestone Library</p>
               </div>
               <Link
                 href="/books"
-                className="text-xs font-semibold text-teal-600 hover:text-teal-700"
+                className="text-xs font-medium text-zinc-600 hover:text-zinc-950"
               >
                 + Browse Books
               </Link>
@@ -343,21 +356,20 @@ export default function DashboardPage() {
 
             {loading && (
               <div className="space-y-3">
-                <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
-                <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
+                <div className="h-20 animate-pulse bg-zinc-100" />
+                <div className="h-20 animate-pulse bg-zinc-100" />
               </div>
             )}
 
             {!loading && activeBookLoans.length === 0 && (
               <div className="py-10 text-center">
-                <span className="text-3xl">📖</span>
-                <p className="mt-2 text-sm font-medium text-slate-700">No active book loans</p>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="text-sm font-medium text-zinc-700">No active book loans</p>
+                <p className="mt-1 text-xs text-zinc-500">
                   Search the catalog to borrow resources for your research.
                 </p>
                 <Link
                   href="/books"
-                  className="mt-4 inline-flex rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                  className="mt-4 inline-flex border border-zinc-300 px-3.5 py-2 text-xs font-medium text-zinc-800 hover:border-zinc-500"
                 >
                   Browse Catalog
                 </Link>
@@ -365,20 +377,20 @@ export default function DashboardPage() {
             )}
 
             {!loading && activeBookLoans.length > 0 && (
-              <div className="space-y-3">
+              <div className="divide-y divide-zinc-200">
                 {activeBookLoans.map((loan) => (
                   <div
                     key={loan.id}
-                    className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-4 transition sm:flex-row sm:items-center hover:border-slate-300"
+                    className="flex flex-col justify-between gap-3 py-4 transition sm:flex-row sm:items-center"
                   >
                     <div>
-                      <h3 className="font-bold text-slate-900 text-sm leading-snug">
+                      <h3 className="text-sm font-medium leading-snug text-zinc-900">
                         {loan.books?.title ?? "Book Details Unavailable"}
                       </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">Author: {loan.books?.author}</p>
-                      <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+                      <p className="mt-0.5 text-xs text-zinc-500">{loan.books?.author}</p>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500">
                         <span>Due:</span>
-                        <span className="font-semibold text-slate-800">
+                        <span className="font-mono tabular-nums text-zinc-800">
                           {new Date(loan.due_date).toLocaleDateString()}
                         </span>
                       </div>
@@ -388,7 +400,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => handleReturnBook(loan.id)}
                       disabled={returningId === loan.id}
-                      className="self-start sm:self-auto rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+                      className="self-start border border-zinc-300 px-3.5 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-500 disabled:opacity-50 sm:self-auto"
                     >
                       {returningId === loan.id ? "Returning..." : "Return Book"}
                     </button>
@@ -399,15 +411,15 @@ export default function DashboardPage() {
           </section>
 
           {/* Room Reservations Section */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+          <section className="border-y border-zinc-200 bg-white p-6">
+            <div className="mb-4 flex items-center justify-between border-b border-zinc-200 pb-4">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Study Room Reservations</h2>
-                <p className="text-xs text-slate-500">Upcoming scheduled bookings</p>
+                <h2 className="text-lg font-medium tracking-tight text-zinc-950">Study room reservations</h2>
+                <p className="text-xs text-zinc-500">Upcoming scheduled bookings</p>
               </div>
               <Link
                 href="/rooms"
-                className="text-xs font-semibold text-teal-600 hover:text-teal-700"
+                className="text-xs font-medium text-zinc-600 hover:text-zinc-950"
               >
                 + Book a Room
               </Link>
@@ -415,21 +427,20 @@ export default function DashboardPage() {
 
             {loading && (
               <div className="space-y-3">
-                <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
-                <div className="h-20 animate-pulse rounded-xl bg-slate-100" />
+                <div className="h-20 animate-pulse bg-zinc-100" />
+                <div className="h-20 animate-pulse bg-zinc-100" />
               </div>
             )}
 
             {!loading && activeRoomReservations.length === 0 && (
               <div className="py-10 text-center">
-                <span className="text-3xl">🏛️</span>
-                <p className="mt-2 text-sm font-medium text-slate-700">No upcoming reservations</p>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="text-sm font-medium text-zinc-700">No upcoming reservations</p>
+                <p className="mt-1 text-xs text-zinc-500">
                   Reserve a quiet room or group collaborative space.
                 </p>
                 <Link
                   href="/rooms"
-                  className="mt-4 inline-flex rounded-xl bg-teal-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-teal-500"
+                  className="mt-4 inline-flex border border-zinc-900 bg-zinc-900 px-3.5 py-2 text-xs font-medium text-white hover:bg-zinc-700"
                 >
                   Reserve a Room
                 </Link>
@@ -437,27 +448,27 @@ export default function DashboardPage() {
             )}
 
             {!loading && activeRoomReservations.length > 0 && (
-              <div className="space-y-3">
+              <div className="divide-y divide-zinc-200">
                 {activeRoomReservations.map((res) => (
                   <div
                     key={res.id}
-                    className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-4 transition sm:flex-row sm:items-center hover:border-slate-300"
+                    className="flex flex-col justify-between gap-3 py-4 transition sm:flex-row sm:items-center"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-slate-900 text-sm">
+                        <h3 className="text-sm font-medium text-zinc-900">
                           {res.study_rooms?.room_number?.toLowerCase().startsWith("room")
                             ? res.study_rooms.room_number
                             : `Room ${res.study_rooms?.room_number ?? "N/A"}`}
                         </h3>
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-800">
                           Confirmed
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="mt-1 text-xs text-zinc-500">
                         Capacity: {res.study_rooms?.capacity} people
                       </p>
-                      <div className="mt-1 text-xs text-slate-700">
+                      <div className="mt-1 font-mono text-xs tabular-nums text-zinc-700">
                         <span>{new Date(res.start_time).toLocaleDateString()}</span> •{" "}
                         <span>
                           {new Date(res.start_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} –{" "}
@@ -469,7 +480,7 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => initiateCancelReservation(res)}
-                      className="self-start sm:self-auto rounded-xl border border-red-200 bg-red-50/50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                      className="self-start border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-500 sm:self-auto"
                     >
                       Cancel Reservation
                     </button>
@@ -492,12 +503,11 @@ export default function DashboardPage() {
               }
             }}
           >
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-              <span className="text-3xl">⚠️</span>
-              <h3 className="mt-3 text-lg font-bold text-slate-900">
+            <div className="w-full max-w-md border border-zinc-200 bg-white p-6">
+              <h3 className="text-lg font-medium text-zinc-950">
                 Cancel Study Room Reservation?
               </h3>
-              <p className="mt-1 text-xs text-slate-600">
+              <p className="mt-2 text-xs leading-6 text-zinc-600">
                 Are you sure you want to cancel your booking for{" "}
                 <strong>
                   {reservationToCancel.study_rooms?.room_number?.toLowerCase().startsWith("room")
@@ -507,7 +517,7 @@ export default function DashboardPage() {
               </p>
 
               {cancellationCutoffError && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                <div className="mt-4 border border-amber-200 bg-white p-3 text-xs text-amber-800">
                   {cancellationCutoffError}
                 </div>
               )}
@@ -518,7 +528,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => setReservationToCancel(null)}
                   disabled={cancellingId !== null}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="border border-zinc-300 px-4 py-2 text-xs font-medium text-zinc-700 hover:border-zinc-500"
                 >
                   Keep Reservation
                 </button>
@@ -528,7 +538,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={confirmCancelReservation}
                     disabled={cancellingId !== null}
-                    className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-red-500 disabled:opacity-50"
+                    className="border border-zinc-900 bg-zinc-900 px-4 py-2 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
                   >
                     {cancellingId ? "Cancelling..." : "Yes, Cancel Booking"}
                   </button>

@@ -10,23 +10,21 @@ export default function StudyPage() {
 
   return (
     <main
-      className={`min-h-[calc(100vh-65px)] transition-colors duration-300 ${
-        fullscreenFocus ? "bg-[#0b1320] text-slate-100" : "bg-slate-50 text-slate-900"
+      className={`min-h-screen transition-colors duration-300 ${
+        fullscreenFocus ? "bg-zinc-950 text-zinc-100" : "bg-[#faf9f6] text-zinc-900"
       } py-8 px-4 sm:px-6 lg:px-8`}
     >
       <div className="mx-auto max-w-6xl">
         {/* Navigation & Header */}
         {!fullscreenFocus && (
-          <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <header className="mb-10 flex flex-col gap-5 border-b border-zinc-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">⏱️</span>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  Academic Productivity Session
-                </h1>
-              </div>
-              <p className="mt-1 text-sm text-slate-500">
-                Library study aids • Customizable Pomodoro focus timer & daily objectives planner.
+              <p className="mb-3 font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">Practice</p>
+              <h1 className="text-4xl font-medium tracking-tight text-zinc-950 sm:text-5xl">
+                Study tools
+              </h1>
+              <p className="mt-3 text-sm text-zinc-500">
+                Focus intervals and daily objectives, designed for quiet work.
               </p>
             </div>
 
@@ -35,13 +33,13 @@ export default function StudyPage() {
                 type="button"
                 onClick={() => setFullscreenFocus(true)}
                 title="Enter distraction-free study mode"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100"
+                className="border border-zinc-300 px-3.5 py-2 text-xs font-medium text-zinc-700 transition hover:border-zinc-500"
               >
-                <span>🔲 Focus Mode</span>
+                <span>Focus mode</span>
               </button>
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-teal-500"
+                className="px-3 py-2 text-xs font-medium text-zinc-600 transition hover:text-zinc-950"
               >
                 <span>← Your Activity</span>
               </Link>
@@ -53,17 +51,17 @@ export default function StudyPage() {
         {fullscreenFocus && (
           <div className="mb-6 flex items-center justify-between border-b border-slate-800 pb-4">
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
-              <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
-                Distraction-Free Focus Mode
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="font-mono text-xs uppercase tracking-wider text-zinc-400">
+                Focus mode
               </span>
             </div>
             <button
               type="button"
               onClick={() => setFullscreenFocus(false)}
-              className="rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white"
+              className="border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-500"
             >
-              ✕ Exit Focus Mode
+              Exit focus mode
             </button>
           </div>
         )}
@@ -72,17 +70,17 @@ export default function StudyPage() {
         <div className="grid gap-8 lg:grid-cols-2 items-start">
           {/* Pomodoro Focus Timer Card */}
           <section
-            className={`rounded-2xl border p-6 sm:p-8 shadow-sm transition-all ${
+            className={`border p-6 sm:p-8 transition-all ${
               fullscreenFocus
-                ? "border-slate-800 bg-[#111c2e] text-white shadow-xl"
-                : "border-slate-200 bg-white text-slate-900"
+                ? "border-zinc-800 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-900"
             }`}
           >
             <div className="mb-6 text-center">
-              <h2 className="text-xl font-bold tracking-tight">Pomodoro Focus Timer</h2>
+              <h2 className="text-xl font-medium tracking-tight">Pomodoro timer</h2>
               <p
                 className={`mt-1 text-xs ${
-                  fullscreenFocus ? "text-slate-400" : "text-slate-500"
+                  fullscreenFocus ? "text-zinc-400" : "text-zinc-500"
                 }`}
               >
                 Structure your study blocks with interval chimes and on-screen break alerts.
@@ -94,10 +92,10 @@ export default function StudyPage() {
 
           {/* Daily Study Checklist Card */}
           <section
-            className={`rounded-2xl border p-6 sm:p-8 shadow-sm transition-all ${
+            className={`border p-6 sm:p-8 transition-all ${
               fullscreenFocus
-                ? "border-slate-800 bg-[#111c2e] text-white shadow-xl"
-                : "border-slate-200 bg-white text-slate-900"
+                ? "border-zinc-800 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-900"
             }`}
           >
             <StudyChecklist />
@@ -106,34 +104,34 @@ export default function StudyPage() {
 
         {/* Patron Productivity Guide / Tips */}
         {!fullscreenFocus && (
-          <aside className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-teal-700 mb-4">
-              📚 Library Study Tips & Techniques
+          <aside className="mt-10 border-y border-zinc-200 bg-white p-6">
+            <h3 className="mb-4 font-mono text-xs uppercase tracking-wider text-zinc-500">
+              Field notes
             </h3>
             <div className="grid gap-6 md:grid-cols-3">
               <div>
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <span>🎯</span> The Pomodoro Technique
+                <h4 className="text-sm font-medium text-zinc-900">
+                  The Pomodoro technique
                 </h4>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                <p className="mt-1 text-xs leading-relaxed text-zinc-500">
                   25 minutes of deep focus followed by a 5-minute break helps maintain cognitive energy, improve memory consolidation, and avoid study fatigue.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <span>🔔</span> Quiet Zone Friendly
+                <h4 className="text-sm font-medium text-zinc-900">
+                  Quiet-zone friendly
                 </h4>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                <p className="mt-1 text-xs leading-relaxed text-zinc-500">
                   Audible chimes use soft synthesized Web Audio harmonics designed for library environments. You can toggle audio cues on or off at any time.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <span>💾</span> Persistent Session State
+                <h4 className="text-sm font-medium text-zinc-900">
+                  Persistent session state
                 </h4>
-                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                <p className="mt-1 text-xs leading-relaxed text-zinc-500">
                   Your daily objectives and interval settings persist locally in your browser, remaining available throughout your entire library visit.
                 </p>
               </div>

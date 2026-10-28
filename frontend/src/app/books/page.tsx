@@ -111,36 +111,32 @@ export default function BooksPage() {
   }, [books, searchQuery, availabilityFilter]);
 
   return (
-    <main className="min-h-[calc(100vh-65px)] bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 text-slate-900">
+    <main className="min-h-screen bg-[#faf9f6] px-5 py-10 text-zinc-900 sm:px-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-10 flex flex-col gap-5 border-b border-zinc-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📖</span>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                Library Books & Catalog
-              </h1>
-            </div>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mb-3 font-mono text-xs uppercase tracking-[0.16em] text-zinc-500">Collection</p>
+            <h1 className="text-4xl font-medium tracking-tight text-zinc-950 sm:text-5xl">
+              Books &amp; catalog
+            </h1>
+            <p className="mt-3 text-sm text-zinc-500">
               Browse physical holdings at Addlestone Library, check stack locations, and manage loans.
             </p>
           </div>
 
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+            className="self-start border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 transition hover:border-zinc-500 hover:text-zinc-950"
           >
-            <span>📋 View Your Activity</span>
-            <span>→</span>
+            View activity <span aria-hidden="true">→</span>
           </Link>
         </div>
 
         {/* Action / Success Banner */}
         {message && (
-          <div className="mb-6 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 shadow-sm animate-fadeIn">
+          <div className="mb-6 flex items-center justify-between border border-emerald-200 bg-white px-4 py-3 text-sm text-emerald-800">
             <div className="flex items-center gap-2">
-              <span>✅</span>
               <span>{message}</span>
             </div>
             <button
@@ -154,9 +150,8 @@ export default function BooksPage() {
 
         {/* Error Banner */}
         {error && (
-          <div className="mb-6 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm animate-fadeIn">
+          <div className="mb-6 flex items-center justify-between border border-red-200 bg-white px-4 py-3 text-sm text-red-800">
             <div className="flex items-center gap-2">
-              <span>⚠️</span>
               <span>{error}</span>
             </div>
             <button
@@ -169,19 +164,19 @@ export default function BooksPage() {
         )}
 
         {/* Search & Filter Bar */}
-        <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="mb-8 border-y border-zinc-200 bg-white px-4 py-5 sm:px-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             {/* Search Input */}
             <div className="relative flex-1">
-              <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                🔍
+              <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-zinc-400">
+                ⌕
               </span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search catalog by title, author name, or ISBN..."
-                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
+                className="w-full border-b border-zinc-300 bg-transparent py-2.5 pl-10 pr-4 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition focus:border-zinc-900"
               />
               {searchQuery && (
                 <button
@@ -195,14 +190,14 @@ export default function BooksPage() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-slate-100 p-1 text-xs font-medium text-slate-600">
+            <div className="flex items-center gap-4 self-start text-xs font-medium text-zinc-500 sm:self-auto">
               <button
                 type="button"
                 onClick={() => setAvailabilityFilter("all")}
-                className={`rounded-lg px-3 py-1.5 transition ${
+                className={`border-b py-2 transition ${
                   availabilityFilter === "all"
-                    ? "bg-white font-bold text-slate-900 shadow-sm"
-                    : "hover:text-slate-900"
+                    ? "border-zinc-900 text-zinc-950"
+                    : "border-transparent hover:text-zinc-900"
                 }`}
               >
                 All Holdings ({books.length})
@@ -210,10 +205,10 @@ export default function BooksPage() {
               <button
                 type="button"
                 onClick={() => setAvailabilityFilter("available")}
-                className={`rounded-lg px-3 py-1.5 transition ${
+                className={`border-b py-2 transition ${
                   availabilityFilter === "available"
-                    ? "bg-white font-bold text-emerald-700 shadow-sm"
-                    : "hover:text-slate-900"
+                    ? "border-zinc-900 text-zinc-950"
+                    : "border-transparent hover:text-zinc-900"
                 }`}
               >
                 Available ({books.filter((b) => b.is_available).length})
@@ -221,10 +216,10 @@ export default function BooksPage() {
               <button
                 type="button"
                 onClick={() => setAvailabilityFilter("checked_out")}
-                className={`rounded-lg px-3 py-1.5 transition ${
+                className={`border-b py-2 transition ${
                   availabilityFilter === "checked_out"
-                    ? "bg-white font-bold text-slate-900 shadow-sm"
-                    : "hover:text-slate-900"
+                    ? "border-zinc-900 text-zinc-950"
+                    : "border-transparent hover:text-zinc-900"
                 }`}
               >
                 Checked Out ({books.filter((b) => !b.is_available).length})
@@ -239,7 +234,7 @@ export default function BooksPage() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="h-44 animate-pulse rounded-2xl border border-slate-200 bg-white p-5"
+                className="h-20 animate-pulse border-b border-zinc-200 bg-white"
               />
             ))}
           </div>
@@ -247,12 +242,11 @@ export default function BooksPage() {
 
         {/* Zero Results State (Alternative Path 3a) */}
         {!loading && filteredBooks.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-            <span className="text-4xl">📚</span>
-            <h3 className="mt-3 text-base font-semibold text-slate-900">
+          <div className="border-y border-zinc-200 bg-white p-12 text-center">
+            <h3 className="text-base font-medium text-zinc-900">
               No resources found matching your search
             </h3>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-zinc-500">
               Try refining your keywords, checking the spelling, or clearing filters.
             </p>
             {(searchQuery || availabilityFilter !== "all") && (
@@ -272,57 +266,46 @@ export default function BooksPage() {
 
         {/* Books Cards Grid */}
         {!loading && filteredBooks.length > 0 && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white">
             {filteredBooks.map((book) => {
               const isProcessing = processingId === book.id;
               return (
                 <div
                   key={book.id}
-                  className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                  className="group grid gap-5 px-5 py-5 transition-colors hover:bg-zinc-50/70 sm:grid-cols-[1fr_auto] sm:items-center"
                 >
-                  <div>
-                    {/* Top Status & Cover Placeholder */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex h-12 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-slate-800 to-slate-950 text-white shadow-sm">
-                        <span className="text-base font-bold">📖</span>
-                      </div>
-
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                          book.is_available
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-amber-50 text-amber-700 border border-amber-200"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            book.is_available ? "bg-emerald-500" : "bg-amber-500"
-                          }`}
-                        />
-                        <span>{book.is_available ? "Available" : "Checked Out"}</span>
-                      </span>
-                    </div>
+                  <div className="min-w-0">
+                    <span
+                      className={`inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider ${
+                        book.is_available ? "text-emerald-800" : "text-amber-800"
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${
+                        book.is_available ? "bg-emerald-700" : "bg-amber-700"
+                      }`} />
+                      {book.is_available ? "Available" : "Checked out"}
+                    </span>
 
                     {/* Book Metadata */}
-                    <h3 className="mt-4 font-bold text-slate-900 line-clamp-2 text-base leading-snug group-hover:text-teal-700 transition-colors">
+                    <h3 className="mt-2 text-lg font-medium leading-snug tracking-tight text-zinc-950 transition-colors">
                       {book.title}
                     </h3>
-                    <p className="mt-1 text-xs text-slate-600">by {book.author}</p>
+                    <p className="mt-1 text-sm text-zinc-500">{book.author}</p>
 
-                    <div className="mt-4 space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                      <p className="flex justify-between">
-                        <span>ISBN:</span>
-                        <span className="font-mono text-slate-700">{book.isbn}</span>
+                    <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-zinc-500">
+                      <p>
+                        <span className="mr-2">ISBN</span>
+                        <span className="font-mono tabular-nums text-zinc-700">{book.isbn}</span>
                       </p>
-                      <p className="flex justify-between">
-                        <span>Call Number:</span>
-                        <span className="font-mono text-slate-700">
+                      <p>
+                        <span className="mr-2">Call no.</span>
+                        <span className="font-mono text-zinc-700">
                           {book.call_number || `QA 76.73 .${book.isbn.slice(-4)}`}
                         </span>
                       </p>
-                      <p className="flex justify-between">
-                        <span>Location:</span>
-                        <span className="text-slate-700">
+                      <p>
+                        <span className="mr-2">Location</span>
+                        <span className="text-zinc-700">
                           {book.location || "Addlestone 2nd Floor Stacks"}
                         </span>
                       </p>
@@ -330,11 +313,11 @@ export default function BooksPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-5 flex items-center gap-2 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-2 sm:w-56">
                     <button
                       type="button"
                       onClick={() => setSelectedBookForDetails(book)}
-                      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-2 text-center text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                      className="flex-1 border border-zinc-300 py-2 text-center text-xs font-medium text-zinc-700 transition hover:border-zinc-500"
                     >
                       Details
                     </button>
@@ -344,7 +327,7 @@ export default function BooksPage() {
                         type="button"
                         onClick={() => handleCheckout(book)}
                         disabled={isProcessing}
-                        className="flex-1 rounded-xl bg-teal-600 py-2 text-center text-xs font-bold text-white shadow-sm transition hover:bg-teal-500 disabled:opacity-50"
+                        className="flex-1 border border-zinc-900 bg-zinc-900 py-2 text-center text-xs font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50"
                       >
                         {isProcessing ? "Processing..." : "Checkout Book"}
                       </button>
@@ -352,7 +335,7 @@ export default function BooksPage() {
                       <button
                         type="button"
                         disabled
-                        className="flex-1 rounded-xl bg-slate-100 py-2 text-center text-xs font-semibold text-slate-400 cursor-not-allowed"
+                        className="flex-1 border border-zinc-200 py-2 text-center text-xs font-medium text-zinc-400 cursor-not-allowed"
                       >
                         Unavailable
                       </button>
@@ -369,21 +352,21 @@ export default function BooksPage() {
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm animate-fadeIn"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-sm animate-fadeIn"
             onClick={(e) => {
               if (e.target === e.currentTarget) setSelectedBookForDetails(null);
             }}
           >
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="w-full max-w-lg border border-zinc-200 bg-[#faf9f6] p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="inline-block rounded-md bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                     Resource Record
                   </span>
-                  <h3 className="mt-2 text-xl font-bold text-slate-900">
+                  <h3 className="mt-2 text-xl font-medium tracking-tight text-zinc-950">
                     {selectedBookForDetails.title}
                   </h3>
-                  <p className="text-xs text-slate-500">by {selectedBookForDetails.author}</p>
+                  <p className="text-xs text-zinc-500">{selectedBookForDetails.author}</p>
                 </div>
                 <button
                   type="button"
@@ -394,26 +377,26 @@ export default function BooksPage() {
                 </button>
               </div>
 
-              <div className="mt-5 space-y-2 rounded-xl bg-slate-50 p-4 text-xs text-slate-600">
-                <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="font-semibold text-slate-700">ISBN-13:</span>
+              <div className="mt-5 space-y-2 border-y border-zinc-200 bg-white p-4 text-xs text-zinc-600">
+                <div className="flex justify-between border-b border-zinc-200 py-1">
+                  <span className="text-zinc-700">ISBN-13:</span>
                   <span className="font-mono">{selectedBookForDetails.isbn}</span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="font-semibold text-slate-700">Physical Call Number:</span>
+                <div className="flex justify-between border-b border-zinc-200 py-1">
+                  <span className="text-zinc-700">Physical call number:</span>
                   <span className="font-mono">
                     {selectedBookForDetails.call_number || `QA 76.73 .${selectedBookForDetails.isbn.slice(-4)}`}
                   </span>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-200">
-                  <span className="font-semibold text-slate-700">Library Location:</span>
+                <div className="flex justify-between border-b border-zinc-200 py-1">
+                  <span className="text-zinc-700">Library location:</span>
                   <span>{selectedBookForDetails.location || "Addlestone Library • 2nd Floor Stacks"}</span>
                 </div>
                 <div className="flex justify-between py-1">
-                  <span className="font-semibold text-slate-700">Current Status:</span>
+                  <span className="text-zinc-700">Current status:</span>
                   <span
                     className={`font-bold ${
-                      selectedBookForDetails.is_available ? "text-emerald-600" : "text-amber-600"
+                      selectedBookForDetails.is_available ? "text-emerald-800" : "text-amber-800"
                     }`}
                   >
                     {selectedBookForDetails.is_available ? "Available for Loan" : "Checked Out by Patron"}
@@ -421,7 +404,7 @@ export default function BooksPage() {
                 </div>
               </div>
 
-              <div className="mt-4 text-xs leading-relaxed text-slate-500">
+              <div className="mt-4 text-xs leading-relaxed text-zinc-500">
                 {selectedBookForDetails.description ||
                   "This resource is part of the general circulating collection. Standard checkout period is 14 days for students and faculty."}
               </div>
@@ -430,7 +413,7 @@ export default function BooksPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedBookForDetails(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="border border-zinc-300 px-4 py-2 text-xs font-medium text-zinc-700 hover:border-zinc-500"
                 >
                   Close
                 </button>
@@ -439,7 +422,7 @@ export default function BooksPage() {
                     type="button"
                     onClick={() => handleCheckout(selectedBookForDetails)}
                     disabled={processingId === selectedBookForDetails.id}
-                    className="rounded-xl bg-teal-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-500 disabled:opacity-50"
+                    className="border border-zinc-900 bg-zinc-900 px-5 py-2 text-xs font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
                   >
                     {processingId === selectedBookForDetails.id ? "Processing..." : "Checkout (14 Days)"}
                   </button>
