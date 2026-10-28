@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type IconName = "dashboard" | "books" | "rooms" | "availability" | "activity";
 
@@ -80,6 +84,52 @@ function DashboardIcon({ name }: { name: IconName }) {
 }
 
 export default function DashboardPage() {
+
+  const [activity, setActivity] = useState<{
+    book_loans: Array<{
+      id: string;
+      due_date:string;
+      status: string;
+      books: { title: string; author: string } | null;
+    }>;
+    room_reservations: Array<{
+      id: string;
+      start_time: string;
+      end_time: string;
+      status: string;
+      study_rooms: { room_number: string } | null;
+    }>;
+  } | null>(null);
+  const [activityError, setActivityError] = useState("");
+
+  useEffect(() => { 
+    async function loadActivity() { 
+      if (!supabase) { 
+        setActivityError("Supabase is not configured.");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.getUser();
+      
+      if (error || !data.user) {
+        setActivityError("Log in to view your activity.");
+        return;
+      }
+
+      try { 
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/users/${data.user.id}/activity`
+        );
+        if (!response.ok) throw new Error("Activity request failed");
+        setActivity(await response.json());
+      } catch { 
+        setActivityError("Could not load your activity.")
+      }
+    }
+
+    void loadActivity();
+  }, []);
+
   return (
     <main className="min-h-screen bg-[#E7F1F6] text-[#10263F] lg:flex">
       <aside className="border-b border-[#C9DEE6] bg-[#D7E8EF] px-6 py-4 lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r lg:px-5 lg:py-8">
@@ -125,6 +175,13 @@ export default function DashboardPage() {
             <DashboardIcon name="activity" />
             Your Activity
           </a>
+
+          <Link 
+            href="/logout"
+            className = "flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
+          >
+            Log out
+          </Link>
         </nav>
       </aside>
 
@@ -168,10 +225,70 @@ export default function DashboardPage() {
             </div>
             <div>
               <h2 className="text-xl font-semibold">Your Activity</h2>
-              <p className="mt-3 text-[#526B7D]">
-                Your checked-out items and upcoming reservations will be
-                displayed here.
-              </p>
+              {activityError && (
+                <p role="alert" className = "mt-3 text-red-700">
+                  {activityError}
+                </p>
+              )}
+
+              {!activity && !activityError && (
+                <p role="status" className = "mt-3 text-[#526B7D]">
+                  Loading your activity...
+                </p>
+              )}
+
+              {activity && ( 
+                <div className = "mt-5 grid gap-6 md:grid-cols-2">
+                  <div>
+                    <h3 className = "font-semibold">Checked-out books</h3>
+                    {activity.book_loans.filter((loan) => loan.status === "checked_out").length === 0 ? (
+                      <p className = "mt-2 text-[#526B7D]">No books checked out.</p>
+                    ) : (
+                      <ul className = "mt-3 space-y-3">
+                        {activity.book_loans
+                        .filter((loan) => loan.status === "checked_out")
+                        .map((loan) => (
+                          <li key={loan.id} className = "rounded-xl border border-[#C9DEE6] p-4">
+                            <p className = "font-medium">{loan.books?.title ?? "Unknown book"}</p>
+                            <p className = "text-sm text-[#526B7D]">{loan.books?.author}</p>
+                            <p className = "mt-2 text-sm">
+                              Due {new Date(loan.due_date).toLocaleDateString()}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className = "font-semibold">Study room reservation</h3>
+                    {activity.room_reservations.filter(
+                      (reservation) => reservation.status === "confirmed"
+                    ).length === 0 ? (
+                      <p className = "mt-2 text-[#526B7D]">No confirmed reservations.</p>
+                    ) : (
+                      <ul className = "mt-3 space-y-3">
+                        {activity.room_reservations
+                          .filter((reservation) => reservation.status === "confirmed")
+                          .map((reservation) => (
+                            <li
+                              key={reservation.id}
+                              className = "rounded-xl border border-[#C9DEE6] p-4"
+                            >
+                              <p className = "font-medium">
+                                Room {reservation.study_rooms?.room_number ?? "Unknown"}
+                              </p>
+                              <p className = "mt-2 text-sm text-[#526B7D]">
+                                {new Date(reservation.start_time).toLocaleDateString()} -{" "}
+                                {new Date(reservation.end_time).toLocaleDateString()}
+                              </p>
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
