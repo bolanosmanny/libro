@@ -1,7 +1,9 @@
 import sys
+import uuid
 import os
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,12 +13,26 @@ from pydantic import BaseModel
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import get_db
+from occupancy import occupancy_router, simulation_worker, cache_manager
 
 # Load .env directly from the backend folder
 env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-app = FastAPI(title="Libro API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: initialize cache, run initial simulation evaluation cycle, and launch worker
+    await cache_manager.initialize()
+    await simulation_worker.compute_and_cache_cycle()
+    simulation_worker.start()
+    yield
+    # Shutdown: stop worker task and close cache connections
+    await simulation_worker.stop()
+    await cache_manager.close()
+
+
+app = FastAPI(title="Libro API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,6 +41,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount the Occupancy & Busyness Prediction Router
+app.include_router(occupancy_router)
 
 
 # --- Pydantic Schemas ---
@@ -38,6 +57,7 @@ class RoomReservationRequest(BaseModel):
 class BookCheckoutRequest(BaseModel):
     user_id: str
     book_id: str
+
 
 # --- Book Return Schema ---
 class BookReturnRequest(BaseModel):
@@ -69,6 +89,7 @@ def return_book(req: BookReturnRequest, db=Depends(get_db)):
     except Exception as e:
         print("Return book error:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # --- Health Checks ---
 @app.get("/")
@@ -168,6 +189,13 @@ def reserve_study_room(req: RoomReservationRequest, db=Depends(get_db)):
 @app.get("/api/users/{user_id}/activity")
 def get_user_activity(user_id: str, db=Depends(get_db)):
     try:
+        uuid.UUID(str(user_id))
+    except (ValueError, TypeError, AttributeError):
+        return {
+            "book_loans": [],
+            "room_reservations": []
+        }
+    try:
         books = db.table("book_loans").select("*, books(*)").eq("user_id", user_id).execute()
         rooms = db.table("room_reservations").select("*, study_rooms(*)").eq("user_id", user_id).execute()
 
@@ -178,6 +206,7 @@ def get_user_activity(user_id: str, db=Depends(get_db)):
     except Exception as e:
         print("User activity error:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # --- Cancel Study Room Reservation ---
 @app.delete("/api/reservations/rooms/{reservation_id}")
