@@ -18,7 +18,7 @@ const dashboardSections: {
   },
   {
     id: "study-rooms",
-    title: "Study Rooms",
+    title: "Reserve Rooms",
     description:
       "Reserve study rooms for group discussions or individual study sessions.",
     icon: "rooms",
@@ -89,7 +89,7 @@ export default function DashboardPage() {
             alt="Libro"
             width={96}
             height={96}
-            className="h-20 w-20 rounded-xl object-cover"
+            className="h-20 w-20 object-cover"
             priority
           />
         </Link>
@@ -101,22 +101,33 @@ export default function DashboardPage() {
           <Link
             href="/dashboard"
             aria-current="page"
-            className="flex shrink-0 items-center gap-3 rounded-xl bg-[#C3E6EB] px-4 py-3 font-semibold text-[#10263F]"
+            className="flex shrink-0 items-center gap-3 rounded-md bg-[#C3E6EB] px-4 py-3 font-semibold text-[#10263F]"
           >
             <DashboardIcon name="dashboard" />
             Dashboard
           </Link>
 
-          {dashboardSections.map((section) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
-            >
-              <DashboardIcon name={section.icon} />
-              {section.title}
-            </a>
-          ))}
+          {dashboardSections.map((section) =>
+            section.id === "study-rooms" ? (
+              <Link
+                key={section.id}
+                href="/dashboard/reserve-rooms"
+                className="flex shrink-0 items-center gap-3 rounded-md px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
+              >
+                <DashboardIcon name={section.icon} />
+                {section.title}
+              </Link>
+            ) : (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className="flex shrink-0 items-center gap-3 rounded-md px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
+              >
+                <DashboardIcon name={section.icon} />
+                {section.title}
+              </a>
+            ),
+          )}
 
           <a
             href="#activity"
@@ -142,28 +153,43 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {dashboardSections.map((section) => (
+        <div className="grid gap-5 md:grid-cols-2">
+          {dashboardSections.map((section) =>
+            section.id === "study-rooms" ? (
+              <Link
+                key={section.id}
+                href="/dashboard/reserve-rooms"
+                className="group min-h-52 border border-[#C9DEE6] bg-[#F4FAFC] p-6 transition-colors hover:border-[#0D8F91] hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0D8F91]"
+              >
+                <div className="flex h-12 w-12 items-center justify-center bg-[#D9F0F1] text-[#0D8F91]">
+                  <DashboardIcon name={section.icon} />
+                </div>
+                <h2 className="mt-5 text-xl font-semibold group-hover:text-[#08797B]">{section.title}</h2>
+                <p className="mt-3 text-[#526B7D]">{section.description}</p>
+                <span className="mt-5 inline-block text-sm font-semibold text-[#08797B]">View rooms and floor plans →</span>
+              </Link>
+            ) : (
             <section
               key={section.id}
               id={section.id}
-              className="min-h-52 scroll-mt-8 rounded-2xl border border-[#C9DEE6] bg-[#F4FAFC] p-6 shadow-sm"
+              className="min-h-52 scroll-mt-8 border border-[#C9DEE6] bg-[#F4FAFC] p-6"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D9F0F1] text-[#0D8F91]">
+              <div className="flex h-12 w-12 items-center justify-center bg-[#D9F0F1] text-[#0D8F91]">
                 <DashboardIcon name={section.icon} />
               </div>
               <h2 className="mt-5 text-xl font-semibold">{section.title}</h2>
               <p className="mt-3 text-[#526B7D]">{section.description}</p>
             </section>
-          ))}
+            ),
+          )}
         </div>
 
         <section
           id="activity"
-          className="mt-6 scroll-mt-8 rounded-2xl border border-[#C9DEE6] bg-[#F4FAFC] p-6 shadow-sm"
+          className="mt-5 scroll-mt-8 border border-[#C9DEE6] bg-[#F4FAFC] p-6"
         >
           <div className="flex items-start gap-5">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#D9F0F1] text-[#0D8F91]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#D9F0F1] text-[#0D8F91]">
               <DashboardIcon name="activity" />
             </div>
             <div>
