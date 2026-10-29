@@ -102,6 +102,7 @@ export default function DashboardPage() {
   } | null>(null);
   const [activityError, setActivityError] = useState("");
   const [returningLoanId, setReturningLoanId] = useState<string | null>(null);
+  const [cancellingReservationId, setCancellingReservationId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadActivity() {
@@ -193,6 +194,58 @@ export default function DashboardPage() {
         } finally {
           setReturningLoanId(null);
         }
+    }
+
+    async function handleCancelReservation(reservationId: string) {
+      if (!supabase) {
+        setActivityError("Authentication is not configured.");
+        return;
+      }
+
+      setCancellingReservationId(reservationId);
+      setActivityError("");
+
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error || !data.session) {
+          throw new Error("Log in to cancel a reservation.");
+        }
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/reservations/rooms/${reservationId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${data.session.access_token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          throw new Error(errorBody?.detail ?? "Could not cancel reservation.");
+        }
+
+        setActivity((current) =>
+        current
+          ? {
+              ...current,
+              room_reservations:
+              current.room_reservations.map((reservation) =>
+                reservation.id === reservationId
+                  ? { ...reservation, status: "cancelled" }
+                  : reservation
+            ),
+          }
+        : current
+      );
+      } catch (err: unknown) {
+        setActivityError(
+          err instanceof Error ? err.message : "Could not cancel reservation."
+        );
+      } finally {
+        setCancellingReservationId(null);
+      }
     }
 
   return (
@@ -363,6 +416,17 @@ export default function DashboardPage() {
                                   timeStyle: "short",
                                 })}
                               </p>
+
+                              <button
+                                type="button"
+                                onClick={() => void handleCancelReservation(reservation.id)}
+                                disabled={cancellingReservationId !== null}
+                                className = "mt-3 rounded-lg border border-red-600 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                              >
+                                {cancellingReservationId === reservation.id
+                                  ? "Cancelling..."
+                                  : "Cancel reservation"}
+                              </button>
                             </li>
                           ))}
                       </ul>

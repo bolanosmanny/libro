@@ -1,14 +1,12 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-
 from database import get_db
+from auth import get_current_user_id
 
 router = APIRouter(tags=["rooms"])
 
 class RoomReservationRequest(BaseModel):
-    user_id: str
     room_id: str
     start_time: datetime
     end_time: datetime
@@ -23,24 +21,40 @@ def get_study_rooms(db=Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/reservations/rooms")
-def reserve_study_room(req: RoomReservationRequest, db=Depends(get_db)):
+def reserve_study_room(
+    req: RoomReservationRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    db=Depends(get_db)
+):
+    if req.start_time.utcoffset() is None or req.end_time.utcoffset() is None:
+        raise HTTPException(status_code=422, detail="Times must include a timezone.")
+
+    start = req.start_time.astimezone(timezone.utc)
+    end = req.end_time.astimezone(timezone.utc)
+
+    if start >= end:
+        raise HTTPException(status_code=422, detail="End time must be after start time.")
+
+    if start <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=422, detail="Start time must be in the future.")
+
     try:
         existing = db.table("room_reservations") \
             .select("*") \
             .eq("room_id", req.room_id) \
             .eq("status", "confirmed") \
-            .lt("start_time", req.end_time.isoformat()) \
-            .gt("end_time", req.start_time.isoformat()) \
+            .lt("start_time", end.isoformat()) \
+            .gt("end_time", start.isoformat()) \
             .execute()
 
         if existing.data:
             raise HTTPException(status_code=400, detail="Room is already reserved for this time slot.")
 
         res = db.table("room_reservations").insert({
-            "user_id": req.user_id,
+            "user_id": current_user_id,
             "room_id": req.room_id,
-            "start_time": req.start_time.isoformat(),
-            "end_time": req.end_time.isoformat(),
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
             "status": "confirmed"
         }).execute()
 
@@ -52,19 +66,33 @@ def reserve_study_room(req: RoomReservationRequest, db=Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.delete("/api/reservations/rooms/{reservation_id}")
-def cancel_study_room_reservation(reservation_id: str, db=Depends(get_db)):
+def cancel_study_room_reservation(
+    reservation_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    db=Depends(get_db)
+):
     try:
-        # Check if reservation exists
-        existing = db.table("room_reservations").select("*").eq("id", reservation_id).execute()
-        if not existing.data:
-            raise HTTPException(status_code=404, detail="Reservation not found.")
+        updated = (
+            db.table("room_reservations")
+            .update({"status": "cancelled"})
+            .eq("id", reservation_id)
+            .eq("user_id", current_user_id)
+            .eq("status", "confirmed")
+            .select("id")
+            .execute()
+        )
 
-        # Update reservation status to cancelled
-        res = db.table("room_reservations").update({"status": "cancelled"}).eq("id", reservation_id).execute()
+        if not updated.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Active reservation not found"
+            )
 
-        return {"message": "Reservation cancelled successfully", "data": res.data}
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        print("Cancel reservation error:", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"message": "Reservation cancelled successfully"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Could not cancel reservation.",
+        ) from exc

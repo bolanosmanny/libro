@@ -105,9 +105,9 @@ export default function RoomsPage() {
         throw new Error("Authentication is not configured");
       }
 
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-      if (authError || !authData.user) {
+      if (sessionError || !sessionData.session) {
         throw new Error("Log in before reserving a room.");
       }
 
@@ -117,9 +117,10 @@ export default function RoomsPage() {
 
       const res = await fetch("http://127.0.0.1:8000/api/reservations/rooms", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`
+         },
         body: JSON.stringify({
-          user_id: authData.user.id,
           room_id: selectedRoom.id,
           start_time: startIso,
           end_time: endIso,
