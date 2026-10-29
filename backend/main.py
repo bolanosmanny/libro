@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from routers import users
 
 # Ensure backend directory is in Python module search path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -17,6 +18,7 @@ env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 app = FastAPI(title="Libro API")
+app.include_router(users.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -164,22 +166,7 @@ def reserve_study_room(req: RoomReservationRequest, db=Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# --- 3. User Dashboard Activity ---
-@app.get("/api/users/{user_id}/activity")
-def get_user_activity(user_id: str, db=Depends(get_db)):
-    try:
-        books = db.table("book_loans").select("*, books(*)").eq("user_id", user_id).execute()
-        rooms = db.table("room_reservations").select("*, study_rooms(*)").eq("user_id", user_id).execute()
-
-        return {
-            "book_loans": books.data,
-            "room_reservations": rooms.data
-        }
-    except Exception as e:
-        print("User activity error:", e)
-        raise HTTPException(status_code=500, detail=str(e))
-
-# --- Cancel Study Room Reservation ---
+#---- Cancel Study Room Reservation ---
 @app.delete("/api/reservations/rooms/{reservation_id}")
 def cancel_study_room_reservation(reservation_id: str, db=Depends(get_db)):
     try:

@@ -117,10 +117,26 @@ export default function DashboardPage() {
       }
 
       try {
+        const { data: sessionData, error: sessionError } = 
+          await supabase.auth.getSession();
+
+        if (sessionError || !sessionData.session) { 
+          throw new Error("No active session");
+        }
+
         const response = await fetch(
-          `http://127.0.0.1:8000/api/users/${data.user.id}/activity`
+          `http://127.0.0.1:8000/api/users/${data.user.id}/activity`,
+          {
+            headers: { 
+              Authorization: `Bearer ${sessionData.session.access_token}`
+            },
+          }
         );
-        if (!response.ok) throw new Error("Activity request failed");
+
+        if (!response.ok) { 
+          throw new Error("Activity request failed");
+        }
+
         setActivity(await response.json());
       } catch {
         setActivityError("Could not load your activity.")
