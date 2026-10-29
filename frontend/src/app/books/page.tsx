@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 interface Book {
   id: string;
@@ -18,10 +19,6 @@ export default function BooksPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchBooks();
-  }, []);
-
   async function fetchBooks() {
     try {
       const res = await fetch("http://127.0.0.1:8000/api/books");
@@ -36,17 +33,36 @@ export default function BooksPage() {
     }
   }
 
+  useEffect(() => {
+    async function loadBooks() {
+      await fetchBooks();
+    }
+
+    void loadBooks();
+  }, []);
+
   const handleCheckout = async (bookId: string) => {
     setProcessingId(bookId);
     setMessage(null);
     setError(null);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/books/checkout", {
+      if (!supabase) {
+        throw new Error("Authentication is not configured");
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authData.user) {
+        throw new Error("Log in before checking out a book.");
+      }
+
+      const res = await fetch("http://127.0.0.1:8000/api/books/checkout",
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "00000000-0000-0000-0000-000000000000",
+          user_id: authData.user.id,
           book_id: bookId,
         }),
       });
@@ -59,9 +75,9 @@ export default function BooksPage() {
 
       setMessage("Book checked out successfully! Return due in 14 days.");
       await fetchBooks();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Checkout error:", err);
-      setError(err.message || "Could not complete checkout.");
+      setError(err instanceof Error ? err.message : "Could not complete checkout.");
     } finally {
       setProcessingId(null);
     }
@@ -100,7 +116,7 @@ export default function BooksPage() {
                 borderRadius: "8px",
                 padding: "1.25rem",
                 display: "flex",
-                justify: "space-between",
+                justifyContent: "space-between",
                 alignItems: "center",
                 gap: "1rem",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.05)",

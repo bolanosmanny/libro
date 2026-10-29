@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 interface StudyRoom {
   id: string;
@@ -19,13 +20,13 @@ interface StudyRoom {
 const generateTimeOptions = () => {
   const times = [];
   for (let hour = 8; hour <= 22; hour++) {
-    for (let min of [0, 30]) {
+    for (const min of [0, 30]) {
       if (hour === 22 && min === 30) break;
       const hStr = hour < 10 ? `0${hour}` : `${hour}`;
       const mStr = min === 0 ? "00" : `${min}`;
       const period = hour >= 12 ? "PM" : "AM";
       const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-      
+
       times.push({
         value: `${hStr}:${mStr}`,
         label: `${displayHour}:${mStr} ${period}`,
@@ -59,7 +60,7 @@ export default function RoomsPage() {
         if (!res.ok) throw new Error(`Server status ${res.status}`);
         const data = await res.json();
         setRooms(data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to fetch rooms:", err);
         setError("Could not load study rooms.");
       } finally {
@@ -73,7 +74,7 @@ export default function RoomsPage() {
     setSelectedRoom(room);
     setResError(null);
     setResMessage(null);
-    
+
     // Set default reservation date to today (YYYY-MM-DD)
     const today = new Date().toISOString().split("T")[0];
     setReservationDate(today);
@@ -100,6 +101,16 @@ export default function RoomsPage() {
     setSubmitting(true);
 
     try {
+      if (!supabase) {
+        throw new Error("Authentication is not configured");
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authData.user) {
+        throw new Error("Log in before reserving a room.");
+      }
+
       // Combine Date + Time strings into full ISO timestamps
       const startIso = new Date(`${reservationDate}T${startTime}:00`).toISOString();
       const endIso = new Date(`${reservationDate}T${endTime}:00`).toISOString();
@@ -108,7 +119,7 @@ export default function RoomsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "00000000-0000-0000-0000-000000000000",
+          user_id: authData.user.id,
           room_id: selectedRoom.id,
           start_time: startIso,
           end_time: endIso,
@@ -126,9 +137,9 @@ export default function RoomsPage() {
         setSelectedRoom(null);
         setResMessage(null);
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Reservation Error:", err);
-      setResError(err.message || "Could not connect to backend server.");
+      setResError(err instanceof Error ? err.message : "Could not connect to the backend server.");
     } finally {
       setSubmitting(false);
     }
@@ -156,7 +167,7 @@ export default function RoomsPage() {
                 borderRadius: "8px",
                 padding: "1.25rem",
                 display: "flex",
-                justify: "space-between",
+                justifyContent: "space-between",
                 alignItems: "center",
                 gap: "1rem",
                 boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
