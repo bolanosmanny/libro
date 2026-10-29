@@ -276,14 +276,20 @@ export default function DashboardPage() {
           </Link>
 
           {dashboardSections.map((section) => (
-            <a
+            <Link
               key={section.id}
-              href={`#${section.id}`}
+              href={
+                section.id === "books"
+                  ? "/books"
+                  : section.id === "study-rooms"
+                    ? "/rooms"
+                    : `#${section.id}`
+              }
               className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
             >
               <DashboardIcon name={section.icon} />
               {section.title}
-            </a>
+            </Link>
           ))}
 
           <a
