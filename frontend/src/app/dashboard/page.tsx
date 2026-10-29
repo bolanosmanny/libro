@@ -101,6 +101,7 @@ export default function DashboardPage() {
     }>;
   } | null>(null);
   const [activityError, setActivityError] = useState("");
+  const [returningLoanId, setReturningLoanId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadActivity() {
@@ -117,23 +118,23 @@ export default function DashboardPage() {
       }
 
       try {
-        const { data: sessionData, error: sessionError } = 
+        const { data: sessionData, error: sessionError } =
           await supabase.auth.getSession();
 
-        if (sessionError || !sessionData.session) { 
+        if (sessionError || !sessionData.session) {
           throw new Error("No active session");
         }
 
         const response = await fetch(
           `http://127.0.0.1:8000/api/users/${data.user.id}/activity`,
           {
-            headers: { 
+            headers: {
               Authorization: `Bearer ${sessionData.session.access_token}`
             },
           }
         );
 
-        if (!response.ok) { 
+        if (!response.ok) {
           throw new Error("Activity request failed");
         }
 
@@ -145,6 +146,54 @@ export default function DashboardPage() {
 
     void loadActivity();
   }, []);
+
+  async function handleReturn(loanId: string) {
+    if (!supabase) {
+      setActivityError("Authentication is not configured.");
+      return;
+    }
+
+    setReturningLoanId(loanId);
+    setActivityError("");
+
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        throw new Error("Log in to return a book.");
+      }
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/books/return", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${data.session.access_token}`,
+          },
+          body: JSON.stringify({ loan_id: loanId }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          throw new Error(errorBody?.detail ?? "Could not return book.");
+        }
+
+        setActivity((current) =>
+          current
+            ? {
+              ...current,
+              book_loans: current.book_loans.map((loan) =>
+                loan.id === loanId ? { ...loan, status: "returned" } :
+                loan
+                ),
+              }
+            : current
+          );
+        } catch (err: unknown) {
+          setActivityError(err instanceof Error ? err.message : "Could not return book.");
+        } finally {
+          setReturningLoanId(null);
+        }
+    }
 
   return (
     <main className="min-h-screen bg-[#E7F1F6] text-[#10263F] lg:flex">
@@ -270,6 +319,15 @@ export default function DashboardPage() {
                             <p className = "mt-2 text-sm">
                               Due {new Date(loan.due_date).toLocaleDateString()}
                             </p>
+
+                            <button
+                              type="button"
+                              onClick={() => void handleReturn(loan.id)}
+                              disabled={returningLoanId !== null}
+                              className = "mt-3 rounded-lg bg-[#0D8F91] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                            >
+                              {returningLoanId === loan.id ? "Returning..." : "Return book"}
+                            </button>
                           </li>
                         ))}
                       </ul>

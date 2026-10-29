@@ -51,18 +51,20 @@ export default function BooksPage() {
         throw new Error("Authentication is not configured");
       }
 
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-      if (authError || !authData.user) {
+      if (sessionError || !sessionData.session) {
         throw new Error("Log in before checking out a book.");
       }
 
       const res = await fetch("http://127.0.0.1:8000/api/books/checkout",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json" ,
+          Authorization: `Bearer ${sessionData.session.access_token}`
+        },
         body: JSON.stringify({
-          user_id: authData.user.id,
           book_id: bookId,
         }),
       });
