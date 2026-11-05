@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import ReserveRoomsMap from "@/components/reserve-rooms-map";
+import { supabase } from "@/lib/supabase";
 
-interface StudyRoom {
+type StudyRoom = {
   id: string;
   room_number: string;
   capacity: number;
@@ -13,294 +15,411 @@ interface StudyRoom {
     name: string;
     location: string;
   };
-}
-
-// Generate time options from 08:00 AM to 10:00 PM in 30-min increments
-const generateTimeOptions = () => {
-  const times = [];
-  for (let hour = 8; hour <= 22; hour++) {
-    for (let min of [0, 30]) {
-      if (hour === 22 && min === 30) break;
-      const hStr = hour < 10 ? `0${hour}` : `${hour}`;
-      const mStr = min === 0 ? "00" : `${min}`;
-      const period = hour >= 12 ? "PM" : "AM";
-      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-      
-      times.push({
-        value: `${hStr}:${mStr}`,
-        label: `${displayHour}:${mStr} ${period}`,
-      });
-    }
-  }
-  return times;
 };
 
-const TIME_OPTIONS = generateTimeOptions();
+const API_BASE = "http://127.0.0.1:8000";
+
+const TIME_OPTIONS = Array.from({ length: 29 }, (_, index) => {
+  const totalMinutes = 8 * 60 + index * 30;
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  const value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  const label = `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${
+    hour >= 12 ? "PM" : "AM"
+  }`;
+
+  return { value, label };
+});
+
+function localDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<StudyRoom[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<StudyRoom | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  // Form states split into Date + Scrollable Time Dropdowns
+  const [selectedRoom, setSelectedRoom] = useState<StudyRoom | null>(null);
   const [reservationDate, setReservationDate] = useState("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
-
-  const [resMessage, setResMessage] = useState<string | null>(null);
-  const [resError, setResError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [reservationError, setReservationError] = useState<string | null>(null);
+  const [reservationMessage, setReservationMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchRooms() {
+    const controller = new AbortController();
+
+    async function loadRooms() {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/rooms");
-        if (!res.ok) throw new Error(`Server status ${res.status}`);
-        const data = await res.json();
+        const response = await fetch(`${API_BASE}/api/rooms`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server status ${response.status}`);
+        }
+
+        const data: StudyRoom[] = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid room response");
+        }
+
         setRooms(data);
-      } catch (err: any) {
-        console.error("Failed to fetch rooms:", err);
-        setError("Could not load study rooms.");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error("Could not load rooms:", error);
+          setLoadError("Could not load study rooms.");
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
-    fetchRooms();
+
+    void loadRooms();
+    return () => controller.abort();
   }, []);
 
-  const openReservationModal = (room: StudyRoom) => {
+  const visibleRooms = rooms.filter((room) =>
+    `${room.room_number} ${room.libraries?.name ?? ""}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
+  );
+
+  function selectRoom(room: StudyRoom) {
     setSelectedRoom(room);
-    setResError(null);
-    setResMessage(null);
-    
-    // Set default reservation date to today (YYYY-MM-DD)
-    const today = new Date().toISOString().split("T")[0];
-    setReservationDate(today);
+    setReservationError(null);
+    setReservationMessage(null);
+
+    const defaultDate = new Date();
+    if (defaultDate.getHours() >= 9) {
+      defaultDate.setDate(defaultDate.getDate() + 1);
+    }
+
+    setReservationDate(localDateString(defaultDate));
     setStartTime("09:00");
     setEndTime("10:00");
-  };
+  }
 
-  const handleReserve = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedRoom) return;
+  async function handleReserve(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-    if (!reservationDate || !startTime || !endTime) {
-      setResError("Please select a date, start time, and end time.");
+    if (!selectedRoom || submitting) return;
+
+    if (!reservationDate || startTime >= endTime) {
+      setReservationError("Choose a date and an end time after the start time.");
       return;
     }
 
-    if (startTime >= endTime) {
-      setResError("End time must be later than start time.");
+    const start = new Date(`${reservationDate}T${startTime}:00`);
+    const end = new Date(`${reservationDate}T${endTime}:00`);
+
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      start <= new Date()
+    ) {
+      setReservationError("Choose a valid future time.");
       return;
     }
 
-    setResMessage(null);
-    setResError(null);
     setSubmitting(true);
+    setReservationError(null);
+    setReservationMessage(null);
 
     try {
-      // Combine Date + Time strings into full ISO timestamps
-      const startIso = new Date(`${reservationDate}T${startTime}:00`).toISOString();
-      const endIso = new Date(`${reservationDate}T${endTime}:00`).toISOString();
+      if (!supabase) {
+        throw new Error("Authentication is not configured.");
+      }
 
-      const res = await fetch("http://127.0.0.1:8000/api/reservations/rooms", {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error || !data.session) {
+        throw new Error("Log in before reserving a room.");
+      }
+
+      const response = await fetch(`${API_BASE}/api/reservations/rooms`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
         body: JSON.stringify({
-          user_id: "00000000-0000-0000-0000-000000000000",
           room_id: selectedRoom.id,
-          start_time: startIso,
-          end_time: endIso,
+          start_time: start.toISOString(),
+          end_time: end.toISOString(),
         }),
       });
 
-      const data = await res.json();
+      const result: { detail?: string } = await response
+        .json()
+        .catch(() => ({}));
 
-      if (!res.ok) {
-        throw new Error(data.detail || "Failed to reserve room");
+      if (!response.ok) {
+        throw new Error(
+          typeof result.detail === "string"
+            ? result.detail
+            : "Could not reserve the room."
+        );
       }
 
-      setResMessage("Room reserved successfully!");
-      setTimeout(() => {
-        setSelectedRoom(null);
-        setResMessage(null);
-      }, 1500);
-    } catch (err: any) {
-      console.error("Reservation Error:", err);
-      setResError(err.message || "Could not connect to backend server.");
+      setReservationMessage(
+        `${selectedRoom.room_number} reserved. You can view it on your dashboard.`
+      );
+    } catch (error) {
+      setReservationError(
+        error instanceof Error ? error.message : "Could not reserve the room."
+      );
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "900px", margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <h1>Study Rooms</h1>
-        <Link href="/dashboard" style={{ color: "#0070f3", textDecoration: "none", fontWeight: "bold" }}>
-          View Dashboard →
-        </Link>
-      </header>
-
-      {loading && <p>Loading rooms...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {!loading && !error && (
-        <div style={{ display: "grid", gap: "1rem" }}>
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                padding: "1.25rem",
-                display: "flex",
-                justify: "space-between",
-                alignItems: "center",
-                gap: "1rem",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <h3 style={{ margin: "0 0 0.5rem 0" }}>{room.room_number}</h3>
-                <p style={{ margin: "0.25rem 0", color: "#555" }}>
-                  Library: {room.libraries?.name ?? "Main Campus Library"}
-                </p>
-                <p style={{ margin: "0.25rem 0", color: "#555" }}>Capacity: {room.capacity} people</p>
-              </div>
-
-              <div style={{ minWidth: "120px", display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  onClick={() => openReservationModal(room)}
-                  style={{
-                    padding: "0.5rem 1.25rem",
-                    background: "#17c964",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Reserve
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Enhanced Reservation Modal */}
-      {selectedRoom && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
+    <main className="min-h-screen bg-[#E7F1F6] px-5 py-8 text-[#10263F] sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-7xl">
+        <Link
+          href="/dashboard"
+          className="text-sm font-medium text-[#526B7D] hover:text-[#10263F]"
         >
-          <div style={{ background: "white", padding: "2rem", borderRadius: "10px", width: "420px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
-            <h2 style={{ marginTop: 0, marginBottom: "0.5rem" }}>Reserve {selectedRoom.room_number}</h2>
-            <p style={{ margin: "0 0 1.5rem 0", color: "#666", fontSize: "0.9rem" }}>
-              {selectedRoom.libraries?.name ?? "Main Campus Library"} • Max {selectedRoom.capacity} People
-            </p>
+          ← Back to dashboard
+        </Link>
 
-            {resMessage && <p style={{ color: "green", fontWeight: "bold" }}>{resMessage}</p>}
-            {resError && <p style={{ color: "red", fontSize: "0.9rem" }}>{resError}</p>}
+        <header className="mb-7 mt-7 border-b border-[#C9DEE6] pb-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0D8F91]">
+            Libro study spaces
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Reserve a study room
+          </h1>
+          <p className="mt-2 text-[#526B7D]">
+            Choose a room on the map or from the room list, then select a time.
+          </p>
+        </header>
 
-            <form onSubmit={handleReserve} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              {/* Date Input */}
-              <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontWeight: "bold", fontSize: "0.9rem" }}>
-                Reservation Date:
-                <input
-                  type="date"
-                  required
-                  value={reservationDate}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setReservationDate(e.target.value)}
-                  style={{ padding: "0.6rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.95rem" }}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(19rem,0.5fr)]">
+          <section className="rounded-2xl border border-[#C9DEE6] bg-[#F4FAFC] p-5 shadow-sm sm:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold">Study rooms</h2>
+                <p className="mt-1 text-sm text-[#526B7D]">
+                  Map rooms are at Addlestone. The list includes every library.
+                </p>
+              </div>
+              {!loading && !loadError && (
+                <span className="text-sm text-[#526B7D]">
+                  {rooms.length} rooms
+                </span>
+              )}
+            </div>
+
+            {loading && (
+              <p className="mt-6 text-[#526B7D]" role="status">
+                Loading rooms...
+              </p>
+            )}
+
+            {loadError && (
+              <p className="mt-6 text-red-700" role="alert">
+                {loadError}
+              </p>
+            )}
+
+            {!loading && !loadError && (
+              <>
+                <ReserveRoomsMap
+                  databaseRooms={rooms}
+                  selectedRoomId={selectedRoom?.id ?? null}
+                  onSelectRoom={selectRoom}
                 />
-              </label>
 
-              {/* Time Selection Row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontWeight: "bold", fontSize: "0.9rem" }}>
-                  Start Time:
-                  <select
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    style={{ padding: "0.6rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.95rem", background: "#white" }}
+                <div className="mt-8 border-t border-[#C9DEE6] pt-6">
+                  <h3 className="text-lg font-semibold">All rooms</h3>
+
+                  <label
+                    htmlFor="room-search"
+                    className="mt-4 block text-sm font-medium"
                   >
-                    {TIME_OPTIONS.map((t) => (
-                      <option key={`start-${t.value}`} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    Search rooms or libraries
+                  </label>
+                  <input
+                    id="room-search"
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Room 201, Lab Room A..."
+                    className="mt-2 w-full rounded-xl border border-[#C9DEE6] bg-white px-4 py-3 outline-none placeholder:text-[#71818A] focus:border-[#0D8F91] focus:ring-2 focus:ring-[#0D8F91]/20"
+                  />
 
-                <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontWeight: "bold", fontSize: "0.9rem" }}>
-                  End Time:
-                  <select
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    style={{ padding: "0.6rem", borderRadius: "6px", border: "1px solid #ccc", fontSize: "0.95rem", background: "#white" }}
+                  <div className="mt-5 grid max-h-[26rem] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+                    {visibleRooms.map((room) => (
+                      <button
+                        key={room.id}
+                        type="button"
+                        onClick={() => selectRoom(room)}
+                        aria-pressed={selectedRoom?.id === room.id}
+                        className={`rounded-xl border p-4 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-[#0D8F91] ${
+                          selectedRoom?.id === room.id
+                            ? "border-[#0D8F91] bg-[#D9F0F1]"
+                            : "border-[#DDE8EB] bg-white hover:border-[#8ECFD0]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <h4 className="font-semibold">{room.room_number}</h4>
+                          <span className="text-xs font-semibold text-[#0D8F91]">
+                            Select →
+                          </span>
+                        </div>
+
+                        {room.libraries?.name && (
+                          <p className="mt-1 text-sm text-[#526B7D]">
+                            {room.libraries.name}
+                          </p>
+                        )}
+
+                        <p className="mt-3 text-sm text-[#526B7D]">
+                          Seats up to {room.capacity}
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {room.has_whiteboard && (
+                            <span className="rounded-full bg-[#E7F1F6] px-2.5 py-1 text-xs">
+                              Whiteboard
+                            </span>
+                          )}
+                          {room.has_display && (
+                            <span className="rounded-full bg-[#E7F1F6] px-2.5 py-1 text-xs">
+                              Display
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+
+                    {visibleRooms.length === 0 && (
+                      <p className="col-span-full rounded-xl border border-dashed border-[#C9DEE6] p-6 text-[#526B7D]">
+                        No rooms match that search.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+
+          <aside className="h-fit rounded-2xl border border-[#C9DEE6] bg-white p-5 shadow-sm sm:p-6 lg:sticky lg:top-6">
+            {selectedRoom ? (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0D8F91]">
+                  Selected room
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold">
+                  {selectedRoom.room_number}
+                </h2>
+                <p className="mt-1 text-sm text-[#526B7D]">
+                  Seats up to {selectedRoom.capacity}
+                  {selectedRoom.libraries?.name
+                    ? ` · ${selectedRoom.libraries.name}`
+                    : ""}
+                </p>
+
+                {reservationMessage && (
+                  <p
+                    className="mt-5 rounded-lg bg-green-50 p-3 text-sm text-green-800"
+                    role="status"
                   >
-                    {TIME_OPTIONS.map((t) => (
-                      <option key={`end-${t.value}`} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+                    {reservationMessage}
+                  </p>
+                )}
+                {reservationError && (
+                  <p
+                    className="mt-5 rounded-lg bg-red-50 p-3 text-sm text-red-800"
+                    role="alert"
+                  >
+                    {reservationError}
+                  </p>
+                )}
 
-              {/* Action Buttons */}
-              <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  style={{
-                    flex: 1,
-                    padding: "0.75rem",
-                    background: "#0070f3",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                    cursor: submitting ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {submitting ? "Confirming..." : "Confirm Booking"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedRoom(null)}
-                  style={{
-                    padding: "0.75rem 1.25rem",
-                    background: "#f3f4f6",
-                    color: "#374151",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
+                <form onSubmit={handleReserve} className="mt-6 space-y-4">
+                  <label className="block text-sm font-medium">
+                    Date
+                    <input
+                      type="date"
+                      required
+                      value={reservationDate}
+                      min={localDateString(new Date())}
+                      onChange={(event) =>
+                        setReservationDate(event.target.value)
+                      }
+                      className="mt-2 w-full rounded-lg border border-[#C9DEE6] bg-white px-3 py-2"
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block text-sm font-medium">
+                      Start time
+                      <select
+                        value={startTime}
+                        onChange={(event) => setStartTime(event.target.value)}
+                        className="mt-2 w-full rounded-lg border border-[#C9DEE6] bg-white px-3 py-2"
+                      >
+                        {TIME_OPTIONS.map((time) => (
+                          <option key={time.value} value={time.value}>
+                            {time.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block text-sm font-medium">
+                      End time
+                      <select
+                        value={endTime}
+                        onChange={(event) => setEndTime(event.target.value)}
+                        className="mt-2 w-full rounded-lg border border-[#C9DEE6] bg-white px-3 py-2"
+                      >
+                        {TIME_OPTIONS.map((time) => (
+                          <option key={time.value} value={time.value}>
+                            {time.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <p className="text-xs text-[#526B7D]">
+                    Time choices are requests. The backend checks for overlapping
+                    reservations when you submit.
+                  </p>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full rounded-xl bg-[#0D8F91] px-4 py-3 font-semibold text-white hover:bg-[#08797B] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {submitting ? "Confirming..." : "Reserve room"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="py-8 text-center">
+                <h2 className="text-xl font-semibold">Choose a room</h2>
+                <p className="mt-2 text-sm text-[#526B7D]">
+                  Select a map marker or a room from the list.
+                </p>
               </div>
-            </form>
-          </div>
+            )}
+          </aside>
         </div>
-      )}
+      </div>
     </main>
   );
 }
