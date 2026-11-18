@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 type IconName = "dashboard" | "books" | "rooms" | "availability" | "activity";
@@ -103,6 +103,13 @@ export default function DashboardPage() {
   const [activityError, setActivityError] = useState("");
   const [returningLoanId, setReturningLoanId] = useState<string | null>(null);
   const [cancellingReservationId, setCancellingReservationId] = useState<string | null>(null);
+  const cancelDialogRef = useRef<HTMLDialogElement>(null);
+  const [pendingCancellation, setPendingCancellation] = useState<{
+    id: string;
+    roomNumber: string;
+    startTime: string;
+    endTime: string;
+  } | null>(null);
 
   useEffect(() => {
     async function loadActivity() {
@@ -425,7 +432,15 @@ export default function DashboardPage() {
 
                               <button
                                 type="button"
-                                onClick={() => void handleCancelReservation(reservation.id)}
+                                onClick={() => { 
+                                  setPendingCancellation({
+                                    id: reservation.id,
+                                    roomNumber: reservation.study_rooms?.room_number ?? "Study Room",
+                                    startTime: reservation.start_time,
+                                    endTime: reservation.end_time,
+                                  });
+                                  cancelDialogRef.current?.showModal();
+                                }}
                                 disabled={cancellingReservationId !== null}
                                 className = "mt-3 rounded-lg border border-red-600 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
                               >
@@ -444,6 +459,48 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
+
+      <dialog
+        ref={cancelDialogRef}
+        onClose={() => setPendingCancellation(null)}
+        aria-labelledby="cancel-reservation-title"
+        className="m-auto w-[92vw] max-w-md rounded-2xl bg-[#F4FAFC] p-6 text-[#10263F] shadow-2xl backdrop:bg-[#10263F]/70"
+      >
+        <h2 id="cancel-reservation-title" className="text-xl font-semibold">
+          Cancel this Reservation?
+        </h2>
+
+        {pendingCancellation && (
+          <p className = "mt-3 text-[#526B7D]">
+            {pendingCancellation.roomNumber}
+            <br />
+            {new Date(pendingCancellation.startTime).toLocaleString()} -{ " "}
+            {new Date(pendingCancellation.endTime).toLocaleString()}
+          </p>
+        )}
+
+        <div className = "mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => cancelDialogRef.current?.close()}
+            className = "rounded-lg border border-[#C9DEE6] px-4 py-2 font-medium"
+          >
+            Keep reservation
+          </button>
+          <button
+            type="button"
+            disabled={cancellingReservationId !== null}
+            onClick={() => { 
+              const id = pendingCancellation?.id;
+              cancelDialogRef.current?.close();
+              if (id) void handleCancelReservation(id);
+            }}
+            className = "rounded-lg bg-red-700 px-4 py-2 font-medium text-white disabled:opacity-60"
+          >
+            Yes, cancel reservation
+          </button>
+        </div>
+      </dialog>
     </main>
   );
 }
