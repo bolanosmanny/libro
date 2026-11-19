@@ -51,6 +51,13 @@ export default function RoomsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [reservationError, setReservationError] = useState<string | null>(null);
   const [reservationMessage, setReservationMessage] = useState<string | null>(null);
+  const [waitlistSlot, setWaitlistSlot] = useState<{
+    roomId: string;
+    roomNumber: string;
+    startTime: string;
+    endTime: string;
+  } | null>(null);
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,6 +105,7 @@ export default function RoomsPage() {
     setSelectedRoom(room);
     setReservationError(null);
     setReservationMessage(null);
+    setWaitlistSlot(null);
 
     const defaultDate = new Date();
     if (defaultDate.getHours() >= 9) {
@@ -134,6 +142,7 @@ export default function RoomsPage() {
     setSubmitting(true);
     setReservationError(null);
     setReservationMessage(null);
+    setWaitlistSlot(null);
 
     try {
       if (!supabase) {
@@ -164,6 +173,14 @@ export default function RoomsPage() {
         .catch(() => ({}));
 
       if (!response.ok) {
+        if (response.status === 409) { 
+          setWaitlistSlot({
+            roomId: selectedRoom.id,
+            roomNumber: selectedRoom.room_number,
+            startTime: start.toISOString(),
+            endTime: end.toISOString(),
+          });
+        }
         throw new Error(
           typeof result.detail === "string"
             ? result.detail
@@ -180,6 +197,61 @@ export default function RoomsPage() {
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleJoinWaitlist() { 
+    if (!waitlistSlot || joiningWaitlist) return;
+
+    const slot = waitlistSlot;
+
+    setJoiningWaitlist(true);
+    setReservationError(null);
+
+    try { 
+      if (!supabase) { 
+        throw new Error("Authentication is not configured.");
+      }
+
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) { 
+        throw new Error("Log in before joining the waitlist.");
+      }
+
+      const response = await fetch(`${API_BASE}/api/waitlist/rooms`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
+        body: JSON.stringify({
+          room_id: slot.roomId,
+          start_time: slot.startTime,
+          end_time: slot.endTime,
+        }),
+      });
+
+      const result: { detail?: string } = await response 
+        .json()
+        .catch(() => ({}));
+
+      if (!response.ok) { 
+        if(result.detail === "Room is available; reserve it instead") {
+          setWaitlistSlot(null);
+        }
+        throw new Error(result.detail ?? "Could not join the waitlist.");
+      }
+
+      setWaitlistSlot(null);
+      setReservationMessage(
+        `You joined the waitlist for ${slot.roomNumber}. If it opens, the reservation will appear on your dashboard.`
+      );
+    } catch (error) { 
+      setReservationError(
+        error instanceof Error ? error.message : "Could not join the waitlist."
+      );
+    } finally { 
+      setJoiningWaitlist(false);
     }
   }
 
@@ -356,9 +428,12 @@ export default function RoomsPage() {
                       required
                       value={reservationDate}
                       min={localDateString(new Date())}
-                      onChange={(event) =>
-                        setReservationDate(event.target.value)
-                      }
+                      onChange={(event) => {
+                        setReservationDate(event.target.value);
+                        setWaitlistSlot(null);
+                        setReservationError(null);
+                        setReservationMessage(null);
+                      }}
                       className="mt-2 w-full rounded-lg border border-[#C9DEE6] bg-white px-3 py-2"
                     />
                   </label>
@@ -368,7 +443,12 @@ export default function RoomsPage() {
                       Start time
                       <select
                         value={startTime}
-                        onChange={(event) => setStartTime(event.target.value)}
+                        onChange={(event) => {
+                          setStartTime(event.target.value)
+                          setWaitlistSlot(null);
+                          setReservationError(null);
+                          setReservationMessage(null);
+                        }}
                         className="mt-2 w-full rounded-lg border border-[#C9DEE6] bg-white px-3 py-2"
                       >
                         {TIME_OPTIONS.map((time) => (
@@ -383,7 +463,12 @@ export default function RoomsPage() {
                       End time
                       <select
                         value={endTime}
-                        onChange={(event) => setEndTime(event.target.value)}
+                        onChange={(event) => {
+                          setEndTime(event.target.value)
+                          setWaitlistSlot(null);
+                          setReservationError(null);
+                          setReservationMessage(null);
+                        }}
                         className="mt-2 w-full rounded-lg border border-[#C9DEE6] bg-white px-3 py-2"
                       >
                         {TIME_OPTIONS.map((time) => (
@@ -408,6 +493,23 @@ export default function RoomsPage() {
                     {submitting ? "Confirming..." : "Reserve room"}
                   </button>
                 </form>
+
+                {waitlistSlot && ( 
+                  <div className="mt-6 rounded-xl border border-[#C9DEE6] bg-[#E7F1F6] p-4">
+                    <p className="text-sm text-[#526B7D]">
+                      This time is booked. Join the waitlist for {" "}
+                      {new Date(waitlistSlot.startTime).toLocaleString()}?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void handleJoinWaitlist()}
+                      disabled={joiningWaitlist || submitting}
+                      className="mt-3 w-full rounded-xl border border-[#0D8F91] px-4 py-3 font-semibold text-[#08797B] hover:bg-[#D9F0F1] disabled:opacity-60"
+                    >
+                      {joiningWaitlist ? "Joining..." : "Join waitlist"}
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="py-8 text-center">
