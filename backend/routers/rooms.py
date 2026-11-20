@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from auth import get_current_user_id
-
+from uuid import UUID
 from postgrest.exceptions import APIError
 from database import get_db, get_admin_db
 
@@ -122,6 +122,35 @@ def join_room_waitlist(
             status_code=500,
             detail="Could not join the room waitlist"
         ) from exc
+
+@router.delete("/api/waitlist/rooms/{waitlist_id}")
+def leave_room_waitlist(
+    waitlist_id: UUID,
+    current_user_id: str = Depends(get_current_user_id),
+    db=Depends(get_admin_db),
+):
+    try:
+        result = (
+            db.table("room_waitlist")
+            .update({"status": "cancelled"})
+            .eq("id", str(waitlist_id))
+            .eq("user_id", current_user_id)
+            .eq("status", "waiting")
+            .select("id")
+            .execute()
+        )
+    except APIError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Could not leave the room waitlist"
+        ) from exc
+
+    if not result.data:
+        raise HTTPException(
+            status_code=404,
+            detail="Active waitlist entry not found.",
+        )
+    return {"message": "Left room waitlist"}
 
 @router.delete("/api/reservations/rooms/{reservation_id}")
 def cancel_study_room_reservation(

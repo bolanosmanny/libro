@@ -103,6 +103,12 @@ export default function DashboardPage() {
       status: string;
       study_rooms: { room_number: string } | null;
     }>;
+    room_waitlist: Array<{
+      id: string;
+      start_time: string;
+      end_time: string;
+      study_rooms: { room_number: string } | null;
+    }>;
   } | null>(null);
   const [activityError, setActivityError] = useState("");
   const [returningLoanId, setReturningLoanId] = useState<string | null>(null);
@@ -114,6 +120,7 @@ export default function DashboardPage() {
     startTime: string;
     endTime: string;
   } | null>(null);
+  const [leavingWaitlistId, setLeavingWaitlistId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadActivity() {
@@ -256,6 +263,55 @@ export default function DashboardPage() {
         );
       } finally {
         setCancellingReservationId(null);
+      }
+    }
+
+    async function handleLeaveWaitlist(waitlistId: string) { 
+      if (!supabase) { 
+        setActivityError("Authentication is not configured.");
+        return;
+      }
+
+      setLeavingWaitlistId(waitlistId);
+      setActivityError("");
+
+      try { 
+        const { data, error } = await supabase.auth.getSession();
+        if (error || !data.session) { 
+          throw new Error("Log in to leave the waitlist.");
+        }
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/waitlist/rooms/${encodeURIComponent(waitlistId)}`,
+          {
+            method: "DELETE",
+            headers: { 
+              Authorization: `Bearer ${data.session.access_token}`,
+            },
+          }
+        );
+
+        if (!response.ok) { 
+          const errorBody = await response.json().catch(() => null);
+          throw new Error(errorBody?.detail ?? "Could not leave the waitlist.")
+        }
+
+        setActivity((current) =>
+          current
+            ? {
+              ...current,
+              room_waitlist: current.room_waitlist.filter(
+                (entry) => entry.id !== waitlistId
+              ),
+            }
+            : current
+        );
+      } catch (error) { 
+        setActivityError(
+          error instanceof Error ? error.message : "Could not leave the waitlist."
+        );
+      } finally { 
+        setLeavingWaitlistId(null);
       }
     }
 
@@ -459,10 +515,45 @@ export default function DashboardPage() {
                       </ul>
                     )}
                   </div>
+
+                  <div className = "md:col-span-2">
+                    <h3 className = "font-semibold">Your room waitlist</h3>
+                    {activity.room_waitlist.length === 0 ? (
+                      <p className = "mt-2 text-[#526B7D]">No rooms on your waitlist.</p>
+                    ) : (
+                      <ul className = "mt-3 grid gap-3 md:grid-cols-2">
+                        {activity.room_waitlist.map((entry) => (
+                          <li
+                            key={entry.id}
+                            className = "rounded-xl border border-[#C9DEE6] p-4"
+                          >
+                            <p className = "font-medium">
+                              {entry.study_rooms?.room_number ?? "Study room"}
+                            </p>
+                            <p className = "mt-2 text-sm text-[#526B7D]">
+                              {new Date(entry.start_time).toLocaleString()} -{" "}
+                              {new Date(entry.end_time).toLocaleString()}
+                            </p>
+                            <p className="mt-2 text-sm font-medium text-[#0D8F91]">
+                              Waiting for an opening
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => void handleLeaveWaitlist(entry.id)}
+                              disabled={leavingWaitlistId !== null}
+                              className="mt-3 rounded-lg border border-[#0D8F91] px-4 py-2 text-sm font-semibold text-[#08797A] hover:bg-[#D9F0F1] disbaled:opacity-60"
+                            >
+                              {leavingWaitlistId === entry.id ? "Leaving..." : "Leave waitlist"}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                 </div>
-              )}
             </div>
+          )}
           </div>
+        </div>
         </section>
       </div>
 
