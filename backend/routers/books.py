@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from auth import get_current_user_id
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-
+from uuid import UUID
 from database import get_db
 
 router = APIRouter(tags=["books"])
@@ -26,6 +26,26 @@ def get_books(title: str = None, author: str = None, db=Depends(get_db)):
     except Exception as e:
         print("Error fetching books:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/books/{book_id}")
+def get_book(book_id: UUID, db=Depends(get_db)):
+    try:
+        result = (
+            db.table("books")
+            .select("*")
+            .eq("id", str(book_id))
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503, detail="Could not load this book."
+        ) from exc
+
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Book not found.")
+
+    return result.data[0]
 
 @router.post("/api/books/checkout")
 def checkout_book(

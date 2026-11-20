@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import BookCover from "@/components/book-cover";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -12,6 +12,7 @@ type Book = {
   isbn: string | null;
   thumbnail_url?: string | null;
   is_available: boolean;
+  cover_url?: string | null;
 };
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -24,7 +25,6 @@ export default function BooksPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [availableOnly, setAvailableOnly] = useState(false);
-  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   async function fetchBooks() {
     try {
@@ -222,43 +222,21 @@ export default function BooksPage() {
                   key={book.id}
                   className="flex flex-col overflow-hidden rounded-2xl border border-[#C9DEE6] bg-white shadow-sm"
                 >
-                  <div className="relative flex h-44 items-center justify-center bg-gradient-to-br from-[#D9F0F1] to-[#D7E8EF]">
-                    {book.thumbnail_url && !failedImages[book.id] ? (
-                      <Image
-                        src={book.thumbnail_url}
-                        alt={`Cover of ${book.title}`}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                        className="object-contain p-3"
-                        unoptimized
-                        onError={() =>
-                          setFailedImages((current) => ({
-                            ...current,
-                            [book.id]: true,
-                          }))
-                        }
-                      />
-                    ) : (
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 64 64"
-                        fill="none"
-                        className="h-16 w-16 text-[#0D8F91]"
-                      >
-                        <path
-                          d="M32 13C24 9 16 9 7 12v38c9-3 17-3 25 1 8-4 16-4 25-1V12c-9-3-17-3-25 1Z"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M32 13v38"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                        />
-                      </svg>
-                    )}
-                  </div>
+                  
+                  <Link
+                    href={`/books/${book.id}`}
+                    aria-label={`View details for ${book.title}`}
+                    className="relative flex h-44 items-center justify-center bg-gradient-to-br from-[#D9F0F1] to-[#D7E8EF]"
+                  >
+                    <BookCover
+                      key={`${book.id}:${book.cover_url ?? ""}`}
+                      title={book.title}
+                      coverUrl={book.cover_url}
+                      thumbnailUrl={book.thumbnail_url}
+                      sizes="180px"
+                      imageClassName="object-contain p-3"
+                    />
+                  </Link>
 
                   <div className="flex flex-1 flex-col p-5">
                     <span
@@ -274,7 +252,9 @@ export default function BooksPage() {
                     </span>
 
                     <h3 className="mt-4 text-lg font-semibold leading-snug">
-                      {book.title}
+                      <Link href={`/books/${book.id}`} className="hover:text-[#0D8F91] hover:underline">
+                        {book.title}
+                      </Link>
                     </h3>
                     <p className="mt-1 text-sm text-[#526B7D]">
                       {book.author}
