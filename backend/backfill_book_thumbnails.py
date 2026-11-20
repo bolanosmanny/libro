@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 import httpx
 
-from database import get_db
+from database import get_admin_db
 
 GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
 ALLOWED_IMAGE_HOSTS = {"books.google.com", "books.googleusercontent.com"}
@@ -129,7 +129,7 @@ def main() -> None:
             "Add GOOGLE_BOOKS_API_KEY to backend/.env first."
         )
 
-    db = get_db()
+    db = get_admin_db()
     books = (
         db.table("books")
         .select("id,title,author,isbn,thumbnail_url")

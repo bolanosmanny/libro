@@ -3,7 +3,7 @@ from auth import get_current_user_id
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from uuid import UUID
-from database import get_db
+from database import get_db, get_admin_db
 
 router = APIRouter(tags=["books"])
 
@@ -51,7 +51,7 @@ def get_book(book_id: UUID, db=Depends(get_db)):
 def checkout_book(
     req: BookCheckoutRequest,
     current_user_id: str = Depends(get_current_user_id),
-    db=Depends(get_db)
+    db=Depends(get_admin_db)
 ):
     try:
         book = db.table("books").select("*").eq("id", req.book_id).execute()
@@ -80,7 +80,7 @@ def checkout_book(
 def return_book(
     req: BookReturnRequest,
     current_user_id: str = Depends(get_current_user_id),
-    db=Depends(get_db)
+    db=Depends(get_admin_db)
 ):
     try:
         loan = (
