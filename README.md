@@ -1,5 +1,37 @@
-## Libro
-A multi-library platform for students to search and rent books, reserve study rooms, and view library availability.
+# Libro
+
+**Libro is a library web app for finding books, checking them out, reserving study rooms, and viewing your library activity.**
+
+## Features
+
+- Create an account, confirm your email, and sign in with Supabase Auth.
+- Browse and search the book catalog by title, author, or ISBN.
+- Open a book detail page to see its cover, description, categories, and ratings when available.
+- Check out available books and return them from the dashboard.
+- Select study rooms from an Addlestone floor map or room list, then reserve a date and time.
+- Join a room waitlist when a time slot is booked. A cancellation can promote a waiting request.
+- View loans, reservations, and waitlist entries on the dashboard.
+- View equipment availability when inventory has been entered.
+- Use the Lock In study timer.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser[Student browser] --> Frontend[Next.js frontend]
+    Frontend --> Auth[Supabase Auth]
+    Frontend --> API[FastAPI backend]
+    API --> Auth
+    API --> DB[(Supabase PostgreSQL)]
+
+    Google[Google Books API] --> Import[Book import scripts]
+    Open[Open Library] --> Import
+    Import --> DB
+```
+
+The frontend uses Supabase Auth for registration and login. It sends an access token to FastAPI for protected actions. FastAPI verifies the user, handles book loans and room reservations, and reads or updates PostgreSQL records.
+
+Book import scripts use Google Books metadata and covers, with Open Library as a fallback. These scripts populate the catalog; the book search page reads Libro’s database.
 
 ## Tech stack
 
@@ -7,41 +39,94 @@ A multi-library platform for students to search and rent books, reserve study ro
 | --- | --- |
 | Frontend | Next.js, React, TypeScript, Tailwind CSS |
 | Backend | FastAPI, Python |
-| Data | Google Books API|
-| Auth and Database | PostgreSQL, Supabase |
-| AI | TBD |
-| DevOps | Docker Compose, GitHub Actions|
-| Deployment | TBD |
-| Testing| TBD |
+| Authentication | Supabase Auth |
+| Database | Supabase PostgreSQL |
+| Book data | Google Books API, Open Library |
 
-## System Design
-```mermaid
-flowchart LR
-    A["Next.js + React<br/>Frontend"]
-    B["FastAPI + Python<br/>Backend API"]
-    C["Supabase Auth<br/>User login and roles"]
-    D[("PostgreSQL<br/>Users, books, rooms,<br/>reservations")]
-    E["Google Books API<br/>Titles, authors, ISBNs,<br/>cover images"]
+## Run locally
 
-    A -->|"REST API requests"| B
-    B -->|"Verify users"| C
-    B -->|"Read and save data"| D
-    E -->|"Book metadata"| B
+### Prerequisites
 
-    classDef frontend fill:#1f6feb,color:#ffffff,stroke:#58a6ff,stroke-width:2px;
-    classDef backend fill:#238636,color:#ffffff,stroke:#3fb950,stroke-width:2px;
-    classDef auth fill:#7c3aed,color:#ffffff,stroke:#a78bfa,stroke-width:2px;
-    classDef database fill:#0f766e,color:#ffffff,stroke:#2dd4bf,stroke-width:2px;
-    classDef external fill:#b45309,color:#ffffff,stroke:#fbbf24,stroke-width:2px;
+- Node.js and npm
+- Python 3.12+
+- A Supabase project with Libro’s database tables and migrations
+- A Google Books API key only if you plan to run the book import scripts
 
-    class A frontend;
-    class B backend;
-    class C auth;
-    class D database;
-    class E external;
+### Database setup
+
+The application uses `libraries`, `books`, `study_rooms`, `book_loans`, and `room_reservations` as its base tables. The SQL files in `supabase/migrations` add profiles, the room waitlist and reservation functions, equipment inventory, and book detail fields. Apply them in filename order to an existing Libro schema.
+
+The repository does **not yet include migrations that create all five base tables**, so a new Supabase project needs that schema before these migrations can be applied. See [supabase/README.md](supabase/README.md) for the profile and equipment setup notes.
+
+### Backend
+
+Create `backend/.env` with values from your Supabase project:
+
+```env
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_KEY=your-publishable-or-anon-key
+SUPABASE_SECRET_KEY=your-secret-or-service-role-key
+GOOGLE_BOOKS_API_KEY=your-key-if-importing-books
 ```
 
+Keep `SUPABASE_SECRET_KEY` on the backend only. From the repository root:
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+The API runs at `http://127.0.0.1:8000`. Check `http://127.0.0.1:8000/health` to confirm it started.
+
+### Frontend
+
+In a second terminal, from the repository root:
+
+```bash
+cd frontend
+cp .env.example .env.local
+npm ci
+npm run dev
+```
+
+Fill in `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
+
+Open `http://localhost:3000`.
+
+## Project structure
+
+```text
+libro/
+├── backend/
+│   ├── main.py                 # FastAPI application
+│   ├── routers/                # Books, rooms, users, and equipment endpoints
+│   └── *.py                    # Catalog import and cover scripts
+├── frontend/
+│   └── src/app/                # Next.js pages
+└── supabase/
+    └── migrations/             # Database changes and room functions
+```
+
+## Checks
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+The backend also exposes interactive API documentation at `http://127.0.0.1:8000/docs` while it is running.
+
 ## Team
+
 - Emanuel Mora
 - Jaden Morales
 - Simon Salazar-Marin
