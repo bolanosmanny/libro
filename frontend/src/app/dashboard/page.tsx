@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-type IconName = "dashboard" | "books" | "rooms" | "availability" | "activity";
+type IconName = "dashboard" | "books" | "rooms" | "availability" | "activity" | "timer";
 
 const dashboardSections: {
   id: string;
@@ -37,6 +37,13 @@ const dashboardSections: {
     description:
       "Check availability for markers, whiteboards, calculators, chargers, and more.",
     icon: "availability",
+  },
+  {
+    id: "lock-in",
+    href: "/lock-in",
+    title: "Lock In",
+    description: "Start a Pomodoro or set your own study timer.",
+    icon: "timer",
   },
 ];
 
@@ -75,6 +82,13 @@ function DashboardIcon({ name }: { name: IconName }) {
         <>
           <rect x="3" y="5" width="18" height="16" rx="2" />
           <path d="M7 3v4M17 3v4M3 10h18M8 15h3" />
+        </>
+      )}
+
+      {name === "timer" && (
+        <>
+          <circle cx="12" cy="13" r="8" />
+          <path d="M10 2h4m-2 7v4l2 2" />
         </>
       )}
 
@@ -321,7 +335,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {dashboardSections.map((section) => (
             <section
               key={section.id}
@@ -332,7 +346,7 @@ export default function DashboardPage() {
                 <DashboardIcon name={section.icon} />
               </div>
               <h2 className="mt-5 text-xl font-semibold">
-                {section.id === "availability" ? (
+                {section.id === "availability" || section.id === "lock-in" ? (
                   <Link href={section.href} className="underline-offset-4 hover:underline">
                     {section.title}
                   </Link>

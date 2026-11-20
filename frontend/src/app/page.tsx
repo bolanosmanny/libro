@@ -69,6 +69,19 @@ export default function HomePage() {
           Check Equipment Availability →
         </Link>
         <Link
+          href="/lock-in"
+          style={{
+            padding: "1rem 2rem",
+            background: "#10263F",
+            color: "white",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Lock In Study Timer →
+        </Link>
+        <Link
           href="/dashboard"
           style={{
             padding: "1rem 2rem",
