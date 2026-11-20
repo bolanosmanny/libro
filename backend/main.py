@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import users, books, rooms
+from routers import users, books, rooms, equipment
 
 # Ensure backend directory is in Python module search path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -17,6 +17,7 @@ app = FastAPI(title="Libro API")
 app.include_router(users.router)
 app.include_router(books.router)
 app.include_router(rooms.router)
+app.include_router(equipment.router)
 
 app.add_middleware(
     CORSMiddleware,

@@ -56,6 +56,19 @@ export default function HomePage() {
           Reserve Study Rooms →
         </Link>
         <Link
+          href="/equipment"
+          style={{
+            padding: "1rem 2rem",
+            background: "#0D686A",
+            color: "white",
+            borderRadius: "8px",
+            textDecoration: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Check Equipment Availability →
+        </Link>
+        <Link
           href="/dashboard"
           style={{
             padding: "1rem 2rem",
