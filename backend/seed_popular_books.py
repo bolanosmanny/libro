@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 import httpx
 
-from database import get_db
+from database import get_admin_db
 
 SEARCH_URL = "https://openlibrary.org/search.json"
 GOOGLE_URL = "https://www.googleapis.com/books/v1/volumes"
@@ -169,7 +169,7 @@ def main():
     if not api_key:
         raise SystemExit("Set GOOGLE_BOOKS_API_KEY in backend/.env first.")
 
-    db = get_db()
+    db = get_admin_db()
     existing = db.table("books").select("*").execute().data or []
 
     has_library_id = bool(existing) and "library_id" in existing[0]

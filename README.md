@@ -54,9 +54,9 @@ Book import scripts use Google Books metadata and covers, with Open Library as a
 
 ### Database setup
 
-The application uses `libraries`, `books`, `study_rooms`, `book_loans`, and `room_reservations` as its base tables. The SQL files in `supabase/migrations` add profiles, the room waitlist and reservation functions, equipment inventory, and book detail fields. Apply them in filename order to an existing Libro schema.
+For a new Supabase project, run the SQL files in `supabase/migrations` in filename order. The first migration creates the library, book, study room, loan, and reservation tables. Later migrations add profiles, room waitlists, overlap protection, equipment inventory, and book details. An existing project should run only migrations it has not already applied.
 
-The repository does **not yet include migrations that create all five base tables**, so a new Supabase project needs that schema before these migrations can be applied. See [supabase/README.md](supabase/README.md) for the profile and equipment setup notes.
+The core-table migration enables Row Level Security. Visitors can read libraries, books, and study rooms; loans and reservations are accessed through FastAPI after it verifies the user's token. Keep `SUPABASE_SECRET_KEY` on the backend only. On an existing project, deploy the updated backend before applying the core-table migration, because it removes direct access to loans and reservations through the publishable key.
 
 ### Backend
 
