@@ -9,12 +9,14 @@ type IconName = "dashboard" | "books" | "rooms" | "availability" | "activity";
 
 const dashboardSections: {
   id: string;
+  href: string;
   title: string;
   description: string;
   icon: IconName;
 }[] = [
   {
     id: "books",
+    href: "/books",
     title: "Books",
     description:
       "Search and explore a wide range of books available in our collection.",
@@ -22,6 +24,7 @@ const dashboardSections: {
   },
   {
     id: "study-rooms",
+    href: "/rooms",
     title: "Study Rooms",
     description:
       "Reserve study rooms for group discussions or individual study sessions.",
@@ -29,9 +32,10 @@ const dashboardSections: {
   },
   {
     id: "availability",
-    title: "Library Availability",
+    href: "/equipment",
+    title: "Equipment Availability",
     description:
-      "Check the availability of library resources and facilities when available.",
+      "Check availability for markers, whiteboards, calculators, chargers, and more.",
     icon: "availability",
   },
 ];
@@ -285,13 +289,7 @@ export default function DashboardPage() {
           {dashboardSections.map((section) => (
             <Link
               key={section.id}
-              href={
-                section.id === "books"
-                  ? "/books"
-                  : section.id === "study-rooms"
-                    ? "/rooms"
-                    : `#${section.id}`
-              }
+              href={section.href}
               className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
             >
               <DashboardIcon name={section.icon} />
@@ -340,7 +338,15 @@ export default function DashboardPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D9F0F1] text-[#0D8F91]">
                 <DashboardIcon name={section.icon} />
               </div>
-              <h2 className="mt-5 text-xl font-semibold">{section.title}</h2>
+              <h2 className="mt-5 text-xl font-semibold">
+                {section.id === "availability" ? (
+                  <Link href={section.href} className="underline-offset-4 hover:underline">
+                    {section.title}
+                  </Link>
+                ) : (
+                  section.title
+                )}
+              </h2>
               <p className="mt-3 text-[#526B7D]">{section.description}</p>
             </section>
           ))}
