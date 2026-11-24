@@ -424,14 +424,6 @@ export default function DashboardPage() {
             </Link>
           ))}
 
-          <a
-            href="#activity"
-            className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
-          >
-            <DashboardIcon name="activity" />
-            Your Activity
-          </a>
-
           <Link
             href="/logout"
             className = "flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-[#526B7D] hover:bg-[#C3E6EB] hover:text-[#10263F]"
@@ -466,13 +458,9 @@ export default function DashboardPage() {
                 <DashboardIcon name={section.icon} />
               </div>
               <h2 className="mt-5 text-xl font-semibold">
-                {section.id === "availability" || section.id === "lock-in" ? (
-                  <Link href={section.href} className="underline-offset-4 hover:underline">
-                    {section.title}
-                  </Link>
-                ) : (
-                  section.title
-                )}
+                <Link href={section.href} className="underline-offset-4 hover:underline">
+                  {section.title}
+                </Link>
               </h2>
               <p className="mt-3 text-[#526B7D]">{section.description}</p>
             </section>
