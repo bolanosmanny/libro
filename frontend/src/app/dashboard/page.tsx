@@ -110,6 +110,13 @@ export default function DashboardPage() {
       status: string;
       books: { title: string; author: string } | null;
     }>;
+    equipment_loans: Array<{
+      id: string;
+      equipment_id: string;
+      checked_out_at: string;
+      returned_at: string | null;
+      equipment_inventory: { name: string; location: string } | null;
+    }>;
     room_reservations: Array<{
       id: string;
       start_time: string;
@@ -126,6 +133,8 @@ export default function DashboardPage() {
   } | null>(null);
   const [activityError, setActivityError] = useState("");
   const [returningLoanId, setReturningLoanId] = useState<string | null>(null);
+  const [returningEquipmentId, setReturningEquipmentId] =
+  useState<string | null>(null);
   const [cancellingReservationId, setCancellingReservationId] = useState<string | null>(null);
   const cancelDialogRef = useRef<HTMLDialogElement>(null);
   const [pendingCancellation, setPendingCancellation] = useState<{
@@ -228,6 +237,54 @@ export default function DashboardPage() {
         }
     }
 
+    async function handleReturnEquipment(loanId: string) {
+      if (!supabase) {
+        setActivityError("Authentication is not configured.");
+        return;
+      }
+
+      setReturningEquipmentId(loanId);
+      setActivityError("");
+
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (error || !data.session) {
+          throw new Error("Log in to return equipment.");
+        }
+
+        const response = await fetch("http://127.0.0.1:8000/api/equipment/return", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${data.session.access_token}`,
+          },
+          body: JSON.stringify({ loan_id: loanId }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          throw new Error(errorBody?.detail ?? "Could not return equipment.");
+        }
+
+        setActivity((current) =>
+          current
+            ? {
+              ...current,
+              equipment_loans: current.equipment_loans.filter(
+                (loan) => loan.id !== loanId
+              ),
+            }
+            : current
+        );
+      } catch (err) {
+        setActivityError(
+          err instanceof Error ? err.message : "Could not return equipment."
+        );
+      } finally {
+        setReturningEquipmentId(null);
+      }
+    }
+
     async function handleCancelReservation(reservationId: string) {
       if (!supabase) {
         setActivityError("Authentication is not configured.");
@@ -280,8 +337,8 @@ export default function DashboardPage() {
       }
     }
 
-    async function handleLeaveWaitlist(waitlistId: string) { 
-      if (!supabase) { 
+    async function handleLeaveWaitlist(waitlistId: string) {
+      if (!supabase) {
         setActivityError("Authentication is not configured.");
         return;
       }
@@ -289,9 +346,9 @@ export default function DashboardPage() {
       setLeavingWaitlistId(waitlistId);
       setActivityError("");
 
-      try { 
+      try {
         const { data, error } = await supabase.auth.getSession();
-        if (error || !data.session) { 
+        if (error || !data.session) {
           throw new Error("Log in to leave the waitlist.");
         }
 
@@ -299,13 +356,13 @@ export default function DashboardPage() {
           `http://127.0.0.1:8000/api/waitlist/rooms/${encodeURIComponent(waitlistId)}`,
           {
             method: "DELETE",
-            headers: { 
+            headers: {
               Authorization: `Bearer ${data.session.access_token}`,
             },
           }
         );
 
-        if (!response.ok) { 
+        if (!response.ok) {
           const errorBody = await response.json().catch(() => null);
           throw new Error(errorBody?.detail ?? "Could not leave the waitlist.")
         }
@@ -320,11 +377,11 @@ export default function DashboardPage() {
             }
             : current
         );
-      } catch (error) { 
+      } catch (error) {
         setActivityError(
           error instanceof Error ? error.message : "Could not leave the waitlist."
         );
-      } finally { 
+      } finally {
         setLeavingWaitlistId(null);
       }
     }
@@ -445,7 +502,7 @@ export default function DashboardPage() {
               )}
 
               {activity && (
-                <div className = "mt-5 grid gap-6 md:grid-cols-2">
+                <div className="mt-5 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
                   <div>
                     <h3 className = "font-semibold">Checked-out books</h3>
                     {activity.book_loans.filter((loan) => loan.status === "checked_out").length === 0 ? (
@@ -455,7 +512,7 @@ export default function DashboardPage() {
                         {activity.book_loans
                         .filter((loan) => loan.status === "checked_out")
                         .map((loan) => (
-                          <li key={loan.id} className = "rounded-xl border border-[#C9DEE6] p-4">
+                          <li key={loan.id} className="flex min-h-56 flex-col rounded-xl border border-[#C9DEE6] bg-white/60 p-4">
                             <p className = "font-medium">{loan.books?.title ?? "Unknown book"}</p>
                             <p className = "text-sm text-[#526B7D]">{loan.books?.author}</p>
                             <p className = "mt-2 text-sm">
@@ -466,7 +523,7 @@ export default function DashboardPage() {
                               type="button"
                               onClick={() => void handleReturn(loan.id)}
                               disabled={returningLoanId !== null}
-                              className = "mt-3 rounded-lg bg-[#0D8F91] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                              className = "mt-auto w-full rounded-lg bg-[#0D8F91] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
                             >
                               {returningLoanId === loan.id ? "Returning..." : "Return book"}
                             </button>
@@ -489,10 +546,10 @@ export default function DashboardPage() {
                           .map((reservation) => (
                             <li
                               key={reservation.id}
-                              className = "rounded-xl border border-[#C9DEE6] p-4"
+                              className="flex min-h-56 flex-col rounded-xl border border-[#C9DEE6] bg-white/60 p-4"
                             >
                               <p className = "font-medium">
-                                Room {reservation.study_rooms?.room_number ?? "Unknown"}
+                                {reservation.study_rooms?.room_number ?? "Unknown"}
                               </p>
                               <p className="mt-2 text-sm text-[#526B7D]">
                                 {new Date(reservation.start_time).toLocaleString(undefined, {
@@ -508,7 +565,7 @@ export default function DashboardPage() {
 
                               <button
                                 type="button"
-                                onClick={() => { 
+                                onClick={() => {
                                   setPendingCancellation({
                                     id: reservation.id,
                                     roomNumber: reservation.study_rooms?.room_number ?? "Study Room",
@@ -518,7 +575,7 @@ export default function DashboardPage() {
                                   cancelDialogRef.current?.showModal();
                                 }}
                                 disabled={cancellingReservationId !== null}
-                                className = "mt-3 rounded-lg border border-red-600 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                                className = "mt-auto w-full rounded-lg border border-red-600 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
                               >
                                 {cancellingReservationId === reservation.id
                                   ? "Cancelling..."
@@ -530,16 +587,49 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                  <div className = "md:col-span-2">
+                  <div>
+                    <h3 className = "font-semibold">Checked-out Equipment</h3>
+                    {activity.equipment_loans.filter((loan) => !loan.returned_at).length === 0 ? (
+                      <p className = "mt-2 text-[#526B7D]">No equipment checked out.</p>
+                    ) : (
+                      <ul className="mt-3 space-y-3">
+                        {activity.equipment_loans
+                          .filter((loan) => !loan.returned_at)
+                          .map((loan) => (
+                            <li
+                              key={loan.id}
+                              className="flex min-h-56 flex-col rounded-xl border border-[#C9DEE6] bg-white/60 p-4"
+                              >
+                                <p className="font-medium">
+                                  {loan.equipment_inventory?.name ?? "Equipment"}
+                                  </p>
+                                <p className="mt-2 text-sm">
+                                  Checked out {new Date(loan.checked_out_at).toLocaleDateString()}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleReturnEquipment(loan.id)}
+                                  disabled={returningEquipmentId !== null}
+                                  className = "mt-auto w-full rounded-lg bg-[#0D8F91] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                                >
+                                  {returningEquipmentId === loan.id ? "Returning..." : "Return equipment"}
+                                </button>
+                              </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div>
                     <h3 className = "font-semibold">Your room waitlist</h3>
                     {activity.room_waitlist.length === 0 ? (
                       <p className = "mt-2 text-[#526B7D]">No rooms on your waitlist.</p>
                     ) : (
-                      <ul className = "mt-3 grid gap-3 md:grid-cols-2">
+                      <ul className="mt-3 space-y-3">
                         {activity.room_waitlist.map((entry) => (
                           <li
                             key={entry.id}
-                            className = "rounded-xl border border-[#C9DEE6] p-4"
+                            className="flex min-h-56 flex-col rounded-xl border border-[#C9DEE6] bg-white/60 p-4"
                           >
                             <p className = "font-medium">
                               {entry.study_rooms?.room_number ?? "Study room"}
@@ -555,7 +645,7 @@ export default function DashboardPage() {
                               type="button"
                               onClick={() => void handleLeaveWaitlist(entry.id)}
                               disabled={leavingWaitlistId !== null}
-                              className="mt-3 rounded-lg border border-[#0D8F91] px-4 py-2 text-sm font-semibold text-[#08797A] hover:bg-[#D9F0F1] disbaled:opacity-60"
+                              className="mt-auto w-full rounded-lg border border-[#0D8F91] px-4 py-2 text-sm font-semibold text-[#08797A] hover:bg-[#D9F0F1] disabled:opacity-60"
                             >
                               {leavingWaitlistId === entry.id ? "Leaving..." : "Leave waitlist"}
                             </button>
@@ -601,7 +691,7 @@ export default function DashboardPage() {
           <button
             type="button"
             disabled={cancellingReservationId !== null}
-            onClick={() => { 
+            onClick={() => {
               const id = pendingCancellation?.id;
               cancelDialogRef.current?.close();
               if (id) void handleCancelReservation(id);

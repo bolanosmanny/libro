@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+const API_BASE = "http://127.0.0.1:8000";
 
 type Equipment = {
   id: string;
@@ -14,16 +17,7 @@ type Equipment = {
 type Inventory =
   | { status: "loading" }
   | { status: "live"; items: Equipment[] }
-  | { status: "sample" };
-
-const sampleInventory: Equipment[] = [
-  { id: "markers", name: "Dry-erase markers", location: "Service desk", total_count: 24, available_count: 20 },
-  { id: "whiteboards", name: "Portable whiteboard", location: "Study area", total_count: 8, available_count: 6 },
-  { id: "calculators", name: "Scientific calculator", location: "Service desk", total_count: 12, available_count: 10 },
-  { id: "usb-c", name: "USB-C charger", location: "Service desk", total_count: 16, available_count: 12 },
-  { id: "lightning", name: "Lightning charger", location: "Service desk", total_count: 14, available_count: 10 },
-  { id: "laptop", name: "Laptop charger", location: "Service desk", total_count: 8, available_count: 6 },
-];
+  | { status: "error" };
 
 const equipmentIcons = [
   { match: /marker/i, path: "m4 16 11-11a2.1 2.1 0 0 1 3 0l1 1a2.1 2.1 0 0 1 0 3L8 20H4v-4Zm8-8 4 4M4 20l-1 1h8" },
@@ -61,22 +55,33 @@ export default function EquipmentPage() {
   const [request, setRequest] = useState(0);
   const [query, setQuery] = useState("");
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [checkoutId, setCheckoutId] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
+  const [checkoutMessage, setCheckoutMessage] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadInventory() {
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/equipment", {
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]),
+        const response = await fetch(`${API_BASE}/api/equipment`, {
+          signal: AbortSignal.any([
+            controller.signal,
+            AbortSignal.timeout(8000),
+          ]),
         });
         if (!response.ok) throw new Error("Inventory unavailable");
+
         const items: Equipment[] = await response.json();
         if (!Array.isArray(items)) throw new Error("Invalid inventory response");
 
-        if (!controller.signal.aborted) setInventory({ status: "live", items });
+        if (!controller.signal.aborted) {
+          setInventory({ status: "live", items });
+        }
       } catch {
-        if (!controller.signal.aborted) setInventory({ status: "sample" });
+        if (!controller.signal.aborted) {
+          setInventory({ status: "error" });
+        }
       }
     }
 
@@ -84,14 +89,76 @@ export default function EquipmentPage() {
     return () => controller.abort();
   }, [request]);
 
-  const items =
-    inventory.status === "live" ? inventory.items : sampleInventory;
+  const items = inventory.status === "live" ? inventory.items : [];
   const search = query.trim().toLowerCase();
   const results = items.filter(
     (item) =>
       (!availableOnly || item.available_count > 0) &&
       `${item.name} ${item.location}`.toLowerCase().includes(search)
   );
+
+  async function handleCheckout(item: Equipment) {
+    if (!supabase) {
+      setCheckoutError("Authentication is not configured.");
+      return;
+    }
+
+    setCheckoutId(item.id);
+    setCheckoutError("");
+    setCheckoutMessage("");
+
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        throw new Error("Log in before checking out equipment.");
+      }
+
+      const response = await fetch(`${API_BASE}/api/equipment/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session.access_token}`,
+        },
+        body: JSON.stringify({ equipment_id: item.id }),
+      });
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.detail ?? "Could not check out equipment.");
+      }
+
+      setCheckoutMessage(
+        `${item.name} checked out. You can return it from Your Activity on the dashboard.`
+      );
+      setInventory((current) =>
+        current.status === "live"
+          ? {
+              status: "live",
+              items: current.items.map((entry) =>
+                entry.id === item.id
+                  ? {
+                      ...entry,
+                      available_count: Math.max(0, entry.available_count - 1),
+                    }
+                  : entry
+              ),
+            }
+          : current
+      );
+      setRequest((current) => current + 1);
+    } catch (error) {
+      setCheckoutError(
+        error instanceof Error ? error.message : "Could not check out equipment."
+      );
+    } finally {
+      setCheckoutId(null);
+    }
+  }
+
+  function refreshInventory() {
+    setInventory({ status: "loading" });
+    setRequest((current) => current + 1);
+  }
 
   return (
     <main className="min-h-screen bg-[#E7F1F6] px-5 py-8 text-[#10263F] sm:px-8 lg:px-12">
@@ -108,29 +175,28 @@ export default function EquipmentPage() {
             Equipment Availability
           </h1>
           <p className="mt-2 text-[#526B7D]">
-            Check which equipment is available and where to find it.
+            Check availability and borrow equipment from the library.
           </p>
         </header>
 
-        {inventory.status === "sample" && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-            <p role="status">
-              <strong>Sample inventory.</strong> Live counts are currently unavailable.
-            </p>
-            <button
-              type="button"
-              className="cursor-pointer font-semibold underline underline-offset-4"
-              onClick={() => {
-                setInventory({ status: "loading" });
-                setRequest((current) => current + 1);
-              }}
-            >
-              Retry live inventory
-            </button>
-          </div>
+        {checkoutError && (
+          <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {checkoutError}
+          </p>
+        )}
+        {checkoutMessage && (
+          <p role="status" className="mb-5 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">
+            {checkoutMessage}{" "}
+            <Link href="/dashboard#activity" className="font-semibold underline">
+              View activity
+            </Link>
+          </p>
         )}
 
-        <section aria-label="Equipment inventory" className="rounded-2xl border border-[#C9DEE6] bg-[#F4FAFC] p-5 shadow-sm sm:p-6">
+        <section
+          aria-label="Equipment inventory"
+          className="rounded-2xl border border-[#C9DEE6] bg-[#F4FAFC] p-5 shadow-sm sm:p-6"
+        >
           <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
             <label className="flex w-full max-w-md flex-col gap-2 text-sm font-medium">
               Search equipment
@@ -151,11 +217,22 @@ export default function EquipmentPage() {
               />
               Available only
             </label>
+            <button
+              type="button"
+              onClick={refreshInventory}
+              className="rounded-lg border border-[#0D8F91] px-4 py-2 text-sm font-semibold text-[#08797A] hover:bg-[#D9F0F1]"
+            >
+              Refresh availability
+            </button>
           </div>
 
           {inventory.status === "loading" ? (
             <p role="status" className="mt-6 text-sm text-[#526B7D]">
               Loading equipment inventory…
+            </p>
+          ) : inventory.status === "error" ? (
+            <p role="alert" className="mt-6 text-sm text-red-700">
+              Could not load equipment inventory. Try refreshing.
             </p>
           ) : (
             <>
@@ -165,17 +242,34 @@ export default function EquipmentPage() {
               {results.length > 0 ? (
                 <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {results.map((item) => (
-                    <li key={item.id} className="rounded-xl border border-[#C9DEE6] bg-white p-4">
+                    <li
+                      key={item.id}
+                      className="rounded-xl border border-[#C9DEE6] bg-white p-4"
+                    >
                       <div className="flex items-start gap-3">
                         <EquipmentIcon name={item.name} />
                         <div>
                           <h2 className="font-semibold">{item.name}</h2>
-                          <p className="mt-1 text-sm text-[#526B7D]">{item.location}</p>
+                          <p className="mt-1 text-sm text-[#526B7D]">
+                            {item.location}
+                          </p>
                         </div>
                       </div>
                       <p className={`mt-4 text-sm font-semibold ${item.available_count > 0 ? "text-[#0D686A]" : "text-[#526B7D]"}`}>
                         {item.available_count} of {item.total_count} available
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => void handleCheckout(item)}
+                        disabled={item.available_count === 0 || checkoutId !== null}
+                        className="mt-3 rounded-lg bg-[#0D8F91] px-4 py-2 text-sm font-semibold text-white hover:bg-[#08797A] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {checkoutId === item.id
+                          ? "Checking out..."
+                          : item.available_count === 0
+                            ? "Unavailable"
+                            : "Check out"}
+                      </button>
                     </li>
                   ))}
                 </ul>

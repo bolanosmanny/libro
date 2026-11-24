@@ -11,6 +11,6 @@ The trigger creates rows on the database side, so it works whether or not email 
 
 ## Equipment inventory
 
-Run [the equipment inventory migration](migrations/20261119000000_create_equipment_inventory.sql) in the Supabase SQL Editor. In Table Editor, add one row to `equipment_inventory` per item type and location. Enter the item name, pickup location, total count, and currently available count. Update the available count when stock changes. Students can view the counts without signing in.
+Run the equipment inventory and equipment loans migrations in filename order. Add one row to `equipment_inventory` per item type and pickup location, with its total and available counts. Students can view inventory without signing in. Checkout and return actions go through FastAPI and update the available count automatically.
 
-Leave the table empty until you have real inventory counts. The Libro equipment page shows a labeled sample list whenever it cannot load live data.
+If the table is empty, the Equipment page shows an empty state. The six items from the earlier static list are demo inventory; verify their counts before presenting them as actual library stock.
