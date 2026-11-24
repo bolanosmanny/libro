@@ -13,4 +13,4 @@ The trigger creates rows on the database side, so it works whether or not email 
 
 Run the equipment inventory and equipment loans migrations in filename order. Add one row to `equipment_inventory` per item type and pickup location, with its total and available counts. Students can view inventory without signing in. Checkout and return actions go through FastAPI and update the available count automatically.
 
-If the table is empty, the Equipment page shows an empty state. The six items from the earlier static list are demo inventory; verify their counts before presenting them as actual library stock.
+If the table is empty, the Equipment page shows an empty state. The six library equipment items previously shown in the static list are now stored in `equipment_inventory` and displayed with live availability counts.
