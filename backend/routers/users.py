@@ -21,6 +21,15 @@ def get_user_activity(
     try:
         books = admin_db.table("book_loans").select("*, books(*)").eq("user_id", user_id).execute()
         rooms = admin_db.table("room_reservations").select("*, study_rooms(*)").eq("user_id", user_id).execute()
+        equipment = (
+            admin_db.table("equipment_loans")
+            .select(
+                "id, equipment_id, checked_out_at, returned_at, "
+                "equipment_inventory(name, location)"
+            )
+            .eq("user_id", user_id)
+            .execute()
+        )
 
         waitlist = (
             admin_db.table("room_waitlist")
@@ -37,6 +46,7 @@ def get_user_activity(
             "book_loans": books.data,
             "room_reservations": rooms.data,
             "room_waitlist": waitlist.data,
+            "equipment_loans": equipment.data,
         }
     except Exception as exc:
         raise HTTPException(
